@@ -7,13 +7,14 @@ import { AppLayout } from "@/components/layout/app-layout"
 import { OverviewCharts } from "@/components/analysis/charts/overview-charts"
 import { MinimalMetric } from "@/components/analysis/minimal-metric"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import type { ReactNode } from "react"
 
 interface PageProps {
-    params: Promise<{ symbol: string }>
+    params: { symbol: string }
 }
 
 export default async function AnalysisPage({ params }: PageProps) {
-    const { symbol } = await params
+    const { symbol } = params
 
     const [
         income,
@@ -186,7 +187,7 @@ export default async function AnalysisPage({ params }: PageProps) {
     )
 }
 
-function TabTriggerStyle({ value, children }: { value: string, children: React.ReactNode }) {
+function TabTriggerStyle({ value, children }: { value: string, children: ReactNode }) {
     return (
         <TabsTrigger
             value={value}
