@@ -6,7 +6,7 @@ async function checkConcepts() {
         SELECT base, concept, COUNT(*) as count
         FROM \`development.base\`
         WHERE symbol = 'AAPL' 
-          AND base IN ('profitability', 'indebtedness')
+          AND base IN ('profitability', 'indebtedness', 'liquidity')
         GROUP BY base, concept
         ORDER BY base, count DESC
     `
