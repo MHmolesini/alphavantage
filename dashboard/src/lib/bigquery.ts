@@ -4,7 +4,7 @@ import fs from "fs"
 
 // Determine the path to the credentials file
 // Assuming the app runs in 'dashboard' and the file is in 'alphavantage' (parent dir)
-const credentialsPath = path.resolve(process.cwd(), "../account_service.json")
+const credentialsPath = path.resolve(process.cwd(), "account_service.json")
 
 let options: any = {
     projectId: "alphavantage-482820", // Matches the project_id in the json

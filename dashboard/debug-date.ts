@@ -3,7 +3,7 @@ import dotenv from "dotenv"
 import path from "path"
 import fs from "fs"
 
-const credentialsPath = path.resolve(process.cwd(), "../account_service.json")
+const credentialsPath = path.resolve(process.cwd(), "account_service.json")
 let options: any = { projectId: "alphavantage-482820", location: "US" }
 if (fs.existsSync(credentialsPath)) {
     options.credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf-8"))
