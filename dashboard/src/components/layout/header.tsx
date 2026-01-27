@@ -1,23 +1,19 @@
 "use client"
 
 import { Search, Bell } from "lucide-react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+// import { useState } from "react" // Not needed anymore in header
+// import { useRouter } from "next/navigation" // Not needed anymore in header
 
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { SymbolSearch } from "@/components/search/symbol-search"
 
 export function Header() {
-    const [query, setQuery] = useState("")
-    const router = useRouter()
+    // const [query, setQuery] = useState("") 
+    // const router = useRouter()
 
-    const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter" && query.trim()) {
-            router.push(`/analysis/${query.trim().toUpperCase()}`)
-            setQuery("")
-        }
-    }
+    // const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => { ... } 
+    // removed local search logic
 
     return (
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -29,15 +25,8 @@ export function Header() {
                 </div>
                 <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
                     <div className="w-full flex-1 md:w-auto md:flex-none">
-                        <div className="relative">
-                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search symbols..."
-                                className="pl-8 md:w-[300px] lg:w-[400px]"
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
-                                onKeyDown={handleSearch}
-                            />
+                        <div className="w-full md:w-[300px] lg:w-[400px]">
+                            <SymbolSearch variant="header" />
                         </div>
                     </div>
                     <nav className="flex items-center space-x-2">

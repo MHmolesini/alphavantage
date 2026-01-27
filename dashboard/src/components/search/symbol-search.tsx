@@ -4,8 +4,14 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { getSymbols } from "@/app/actions/financials"
 import { Combobox } from "@/components/ui/combobox"
+import { cn } from "@/lib/utils"
 
-export function SymbolSearch() {
+interface SymbolSearchProps {
+    className?: string
+    variant?: "default" | "header"
+}
+
+export function SymbolSearch({ className, variant = "default" }: SymbolSearchProps) {
     const router = useRouter()
     const [symbols, setSymbols] = useState<{ value: string; label: string }[]>([])
 
@@ -25,11 +31,15 @@ export function SymbolSearch() {
     }
 
     return (
-        <div className="w-full max-w-sm">
+        <div className={cn("w-full transition-all duration-300", className)}>
             <Combobox
                 items={symbols}
-                placeholder="Search symbol (e.g. HSY)..."
+                placeholder={variant === "header" ? "Search..." : "Search symbol (e.g. HSY)..."}
                 onSelect={handleSelect}
+                className={cn(
+                    "w-full",
+                    variant === "header" && "h-9 bg-muted/50 border-transparent focus-visible:bg-background focus-visible:ring-0 focus-visible:border-primary/50"
+                )}
             />
         </div>
     )

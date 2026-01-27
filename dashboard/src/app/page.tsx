@@ -2,7 +2,7 @@
 
 import { AppLayout } from "@/components/layout/app-layout"
 import { KPICards } from "@/components/home/kpi-cards"
-import { SymbolSearch } from "@/components/home/symbol-search"
+import { SymbolSearch } from "@/components/search/symbol-search"
 import { ConceptsTable } from "@/components/home/concepts-table"
 
 export default function Home() {
