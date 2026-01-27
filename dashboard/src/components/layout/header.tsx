@@ -1,12 +1,24 @@
 "use client"
 
 import { Search, Bell } from "lucide-react"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
 export function Header() {
+    const [query, setQuery] = useState("")
+    const router = useRouter()
+
+    const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter" && query.trim()) {
+            router.push(`/analysis/${query.trim().toUpperCase()}`)
+            setQuery("")
+        }
+    }
+
     return (
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container flex h-14 items-center">
@@ -22,6 +34,9 @@ export function Header() {
                             <Input
                                 placeholder="Search symbols..."
                                 className="pl-8 md:w-[300px] lg:w-[400px]"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                onKeyDown={handleSearch}
                             />
                         </div>
                     </div>
