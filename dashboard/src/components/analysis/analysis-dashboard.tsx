@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -21,6 +21,8 @@ interface AnalysisDashboardProps {
     assessment: any[]
 }
 
+type VariationType = "QoQ" | "YoY"
+
 export function AnalysisDashboard({
     symbol,
     income,
@@ -35,6 +37,16 @@ export function AnalysisDashboard({
     const [selectedMetric, setSelectedMetric] = useState<string | null>(null)
     const [selectedMetricName, setSelectedMetricName] = useState<string>("")
     const [chartData, setChartData] = useState<any[]>([])
+    const [variationType, setVariationType] = useState<VariationType>("QoQ")
+
+    // Determine latest period from liquidity data (proxy for report date)
+    const latestPeriod = useMemo(() => {
+        if (!liquidity || liquidity.length === 0) return ""
+        // Sort by date descending
+        const sorted = [...liquidity].sort((a, b) => new Date(b.fiscalDateEnding).getTime() - new Date(a.fiscalDateEnding).getTime())
+        const latest = sorted[0]
+        return latest?.period_quarter || (latest?.fiscalDateEnding ? new Date(latest.fiscalDateEnding).getFullYear().toString() : "")
+    }, [liquidity])
 
     // Helper to process data for the chart when a metric is clicked
     const handleMetricClick = (data: any[], concept: string, label: string) => {
@@ -58,14 +70,19 @@ export function AnalysisDashboard({
     }
 
     // Helper to find latest value for a concept with trend
-    const getMetricWithTrend = (data: any[], concept: string) => {
+    const getMetricWithTrend = (data: any[], concept: string, type: VariationType) => {
         // Sort descending to get latest
         const sorted = [...data]
             .filter(d => d.concept === concept)
             .sort((a, b) => new Date(b.fiscalDateEnding).getTime() - new Date(a.fiscalDateEnding).getTime())
 
         const current = sorted[0]
-        const previous = sorted[1]
+
+        // Compare with previous quarter (index 1) or same quarter last year (index 4)
+        // Note: This assumes quarterly data is sequential. 
+        // 1 year = 4 quarters. 
+        const comparisonIndex = type === "QoQ" ? 1 : 4
+        const previous = sorted[comparisonIndex]
 
         if (!current) return { value: null as number | null, change: null as number | null }
 
@@ -78,7 +95,7 @@ export function AnalysisDashboard({
     }
 
     const MetricCard = ({ label, concept, data }: { label: string, concept: string, data: any[] }) => {
-        const metric = getMetricWithTrend(data, concept)
+        const metric = getMetricWithTrend(data, concept, variationType)
         const isSelected = selectedMetric === concept
 
         return (
@@ -101,7 +118,10 @@ export function AnalysisDashboard({
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex items-center justify-between">
-                <h1 className="text-4xl font-light tracking-tight">{symbol}</h1>
+                <h1 className="text-4xl font-light tracking-tight flex items-baseline gap-4">
+                    {symbol}
+                    {latestPeriod && <span className="text-base font-normal text-muted-foreground font-mono">{latestPeriod}</span>}
+                </h1>
                 <span className="px-3 py-1 rounded-full bg-muted text-xs font-medium text-muted-foreground">Financial Analysis</span>
             </div>
 
@@ -120,8 +140,30 @@ export function AnalysisDashboard({
                 </div>
 
                 <div className="mt-8">
-                    {/* Charts only show if we have data selected, or empty state placeholder */}
-                    {/* User requested: "adds a chart below, full width, empty initially. user touches cards, chart fills." */}
+
+                    {/* Controls for Variation Type */}
+                    <div className="flex justify-end mb-6">
+                        <div className="inline-flex items-center rounded-md border bg-transparent p-1">
+                            <button
+                                onClick={() => setVariationType("QoQ")}
+                                className={cn(
+                                    "px-3 py-1 text-xs font-medium rounded-sm transition-colors",
+                                    variationType === "QoQ" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                QoQ
+                            </button>
+                            <button
+                                onClick={() => setVariationType("YoY")}
+                                className={cn(
+                                    "px-3 py-1 text-xs font-medium rounded-sm transition-colors",
+                                    variationType === "YoY" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                YoY
+                            </button>
+                        </div>
+                    </div>
 
                     {/* Liquidity Tab */}
                     <TabsContent value="liquidity" className="space-y-6">
@@ -215,19 +257,7 @@ export function AnalysisDashboard({
                         <FinancialCard title="Cash Flow" data={cashFlow} />
                     </TabsContent>
 
-                    {/* Chart Section - Visually separated but persistent below the content (or inside tabs?)
-                        The user asked: "adds a chart below". This implies it should be always visible or appear below the grid.
-                        If I put it outside tabs content, it will show for all tabs, but 'selectedMetric' might be from a different tab.
-                        Ideally, clearing the selection when switching tabs might be good, or just keep it.
-                        Let's put it inside the numeric tabs (liquidity, etc) and hide for the raw data tabs (income, etc).
-                     */}
-
                     <div className="mt-12">
-                        {/* Only show chart for the ratio tabs, not raw financial statements if that's preferred. 
-                            However, the chart consumes 'selectedMetric' state. If 'income' tab is selected, the chart might still show 
-                            last selected metric from 'liquidity' which is confusing. 
-                            Maybe hiding it when on raw data tabs is better.
-                        */}
                         <TabsContent value="liquidity">
                             <HistoricalChart data={chartData} metricName={selectedMetricName} />
                         </TabsContent>
