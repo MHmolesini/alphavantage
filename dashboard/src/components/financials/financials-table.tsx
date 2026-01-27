@@ -12,28 +12,22 @@ interface FinancialsTableProps {
 }
 
 export function FinancialsTable({ data, periods, selectedConcepts, onToggleConcept }: FinancialsTableProps) {
-
-    // Data passed here is expected to be an array of objects where concept is the key
-    // But typically financial data comes as a list of records. 
-    // We need to pivot or the parent should pass pivot data.
-    // Let's assume parent pivots it: { concept: "Revenue", "2024 T4": 100, "2024 T3": 90 ... }
-
     if (!data || data.length === 0) {
-        return <div className="text-center p-8 text-muted-foreground">No data available</div>
+        return <div className="text-center p-8 text-muted-foreground text-sm font-light">No data available</div>
     }
 
     return (
-        <div className="w-full border rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
+        <div className="w-full border rounded-xl overflow-hidden shadow-sm bg-card">
+            <div className="overflow-x-auto relative">
                 <Table>
                     <TableHeader>
-                        <TableRow className="hover:bg-transparent bg-muted/50">
-                            <TableHead className="w-[300px] min-w-[200px] sticky left-0 bg-background/95 backdrop-blur z-10 border-r">
-                                Concept
+                        <TableRow className="hover:bg-transparent border-b border-border/50">
+                            <TableHead className="w-[300px] min-w-[200px] sticky left-0 bg-background/95 backdrop-blur z-20 h-10">
+                                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground pl-2">Concept</span>
                             </TableHead>
                             {periods.map(period => (
-                                <TableHead key={period} className="text-right min-w-[120px] font-mono text-xs">
-                                    {period}
+                                <TableHead key={period} className="text-right min-w-[120px] h-10">
+                                    <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{period}</span>
                                 </TableHead>
                             ))}
                         </TableRow>
@@ -45,25 +39,35 @@ export function FinancialsTable({ data, periods, selectedConcepts, onToggleConce
                                 <TableRow
                                     key={row.concept}
                                     className={cn(
-                                        "cursor-pointer transition-colors hover:bg-muted/50",
-                                        isSelected && "bg-muted/50"
+                                        "cursor-pointer transition-all duration-200 border-b border-border/40 hover:bg-muted/30 group",
+                                        isSelected && "bg-muted/40"
                                     )}
                                     onClick={() => onToggleConcept(row.concept)}
                                 >
-                                    <TableCell className="font-medium sticky left-0 bg-background/95 backdrop-blur border-r z-10 flex items-center gap-2">
-                                        <div className={cn(
-                                            "w-1 h-full absolute left-0 top-0 bottom-0 transition-colors",
-                                            isSelected ? "bg-primary" : "bg-transparent"
-                                        )} />
-                                        <span className={cn("truncate", isSelected && "font-semibold")}>
-                                            {row.concept}
-                                        </span>
+                                    <TableCell className={cn(
+                                        "py-2 font-medium sticky left-0 bg-background/95 backdrop-blur z-20 transition-colors group-hover:bg-muted/30",
+                                        isSelected && "bg-muted/40"
+                                    )}>
+                                        <div className="flex items-center gap-3 pl-2">
+                                            <div className={cn(
+                                                "w-1 h-1 rounded-full transition-all duration-300",
+                                                isSelected ? "bg-primary scale-125" : "bg-muted-foreground/30 group-hover:bg-primary/50"
+                                            )} />
+                                            <span className={cn(
+                                                "truncate text-sm transition-colors",
+                                                isSelected ? "text-foreground font-medium" : "text-muted-foreground group-hover:text-foreground"
+                                            )}>
+                                                {row.concept}
+                                            </span>
+                                        </div>
                                     </TableCell>
                                     {periods.map(period => (
-                                        <TableCell key={period} className="text-right font-mono text-xs">
-                                            {row[period] !== null && row[period] !== undefined
-                                                ? new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(row[period])
-                                                : '-'}
+                                        <TableCell key={period} className="text-right py-2">
+                                            <span className="font-mono text-xs text-muted-foreground/80 group-hover:text-foreground transition-colors">
+                                                {row[period] !== null && row[period] !== undefined
+                                                    ? new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(row[period])
+                                                    : '-'}
+                                            </span>
                                         </TableCell>
                                     ))}
                                 </TableRow>
