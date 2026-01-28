@@ -293,9 +293,19 @@ export function RankingsDashboard({ symbol, currentRolling }: RankingsDashboardP
                         )}
                         <div className={cn("space-y-6 transition-opacity duration-200", isLoading ? "opacity-50 pointer-events-none" : "opacity-100")}>
                             <PointsChart data={chartData} selectedConcepts={chartTickers} />
-                            <div className="text-xs text-muted-foreground mb-2 flex justify-between">
-                                <span>Comparison: {selectedConcept}</span>
-                                <span>{tableData.length} Companies</span>
+                            <div className="flex items-center justify-between px-1 mb-2">
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <span>Comparison:</span>
+                                    <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium border border-primary/20 shadow-sm">
+                                        {selectedConcept || `Total ${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}`}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <span className="px-2.5 py-0.5 rounded-full bg-muted-foreground/10 text-foreground font-medium border border-border/50 shadow-sm">
+                                        {tableData.length}
+                                    </span>
+                                    <span>Companies</span>
+                                </div>
                             </div>
                             <RankingsTable
                                 data={tableData}

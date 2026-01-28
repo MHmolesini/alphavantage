@@ -160,17 +160,17 @@ export function RankingsTable({ data, periods, selectedConcepts, onToggleConcept
 
     return (
         <div className="w-full border border-border/50 rounded-xl overflow-hidden shadow-sm bg-muted/20">
-            <div className="overflow-x-auto relative">
+            <div className="overflow-auto relative max-h-[600px] scrollbar-thin scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40">
                 <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 z-40 bg-background/95 backdrop-blur shadow-sm">
                         <TableRow className="hover:bg-transparent border-b border-border/50">
-                            <TableHead className="w-[150px] min-w-[120px] sticky left-0 bg-background/95 backdrop-blur z-20 h-10">
+                            <TableHead className="w-[150px] min-w-[120px] sticky left-0 top-0 z-50 bg-background/95 backdrop-blur h-10 border-b border-border/50 shadow-[1px_0_0_0_rgba(0,0,0,0.1)]">
                                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground pl-8">Symbol</span>
                             </TableHead>
                             {periods.map(period => (
                                 <TableHead
                                     key={period}
-                                    className="text-right min-w-[120px] h-10 cursor-pointer hover:bg-muted/50 transition-colors group"
+                                    className="text-right min-w-[120px] h-10 cursor-pointer hover:bg-muted/50 transition-colors group bg-background/95 backdrop-blur"
                                     onClick={() => handleSort(period)}
                                 >
                                     <div className="flex items-center justify-end gap-2">
