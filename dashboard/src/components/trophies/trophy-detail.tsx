@@ -10,7 +10,10 @@ interface TrophyDetailProps {
 }
 
 export async function TrophyDetail({ symbol, rolling, period }: TrophyDetailProps) {
-    const allPoints = await getSymbolPoints(symbol, rolling)
+    // ALWAYS fetch with rolling=1 (Raw Data) for the Detail View
+    // This ensures medals shown are for the specific quarter(s), not the rolling sum.
+    // The "Score" calculation (Rolling) is handled separately in the Card/Sorting logic.
+    const allPoints = await getSymbolPoints(symbol, 1)
 
     // 1. Determine Target Periods
     let targetPeriods: string[] = []

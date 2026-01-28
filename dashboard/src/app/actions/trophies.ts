@@ -30,33 +30,33 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
     console.log(`[getTrophiesData] Fetching with rolling: ${rollingPeriod}, period: ${period || 'LATEST'}`);
 
     const safeRolling = [1, 4, 8, 12].includes(Number(rollingPeriod)) ? Number(rollingPeriod) : 1
-    const predecessors = safeRolling - 1
 
-    // 1. Determine target periods
+    // 1. Fetch all periods to calculate rolling window
+    const allPeriods = await getTrophiesPeriods()
+
+    if (allPeriods.length === 0) {
+        return []
+    }
+
+    // 2. Determine target periods
     let targetPeriods: string[] = []
 
-    if (period) {
-        targetPeriods = period.split(",")
+    // Determine anchor period (latest selected or absolute latest)
+    // If multiple periods are passed (e.g. compare), take the first one (usually latest in desc) 
+    // or handle specific logic. For rolling, we assume 'period' is the end of the window.
+    const anchorPeriod = period ? period.split(",")[0] : allPeriods[0]
+
+    const anchorIndex = allPeriods.indexOf(anchorPeriod)
+
+    if (anchorIndex !== -1) {
+        // Calculate the slice: from anchor index, take N periods
+        targetPeriods = allPeriods.slice(anchorIndex, anchorIndex + safeRolling)
     } else {
-        const periodQuery = `
-        SELECT MAX(period_quarter) as latest_period
-        FROM \`development.base\`
-        WHERE ranking IS NOT NULL
-      `
-        try {
-            const [rows] = await bigquery.query({ query: periodQuery });
-            if (rows[0]?.latest_period) {
-                targetPeriods = [rows[0].latest_period]
-            }
-        } catch (error) {
-            console.error("Error fetching latest period:", error);
-            return [];
-        }
+        // Fallback if period not found in list
+        targetPeriods = [anchorPeriod]
     }
 
-    if (targetPeriods.length === 0) {
-        return [];
-    }
+    console.log(`[getTrophiesData] Rolling: ${safeRolling}, Anchor: ${anchorPeriod}, Targets: ${targetPeriods.join(', ')}`)
 
     const query = `
     WITH CleanData AS (
@@ -71,7 +71,8 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
       WHERE ranking IS NOT NULL
         AND ranking > 0
     ),
-    AggregatedData AS (
+    -- Data for the ANCHOR period (for Medals)
+    AnchorAggregated AS (
       SELECT 
         symbol, 
         base, 
@@ -79,10 +80,18 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
         normalized_concept as concept, 
         SUM(ranking) as total_ranking
       FROM CleanData
-      WHERE period_quarter IN UNNEST(@targetPeriods)
+      WHERE period_quarter = @anchorPeriod
       GROUP BY 1, 2, 3, 4
     ),
-    -- We calculate rank PER periodical snapshot first
+    -- Data for the ROLLING window (for Score)
+    RollingData AS (
+      SELECT 
+        symbol, 
+        ranking
+      FROM CleanData
+      WHERE period_quarter IN UNNEST(@targetPeriods)
+    ),
+    -- Rank calculation for ANCHOR period
     RankedData AS (
       SELECT 
         symbol, 
@@ -91,27 +100,26 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
         concept, 
         total_ranking,
         RANK() OVER (PARTITION BY base, concept, period_quarter ORDER BY total_ranking DESC) as position_rank
-      FROM AggregatedData
+      FROM AnchorAggregated
     ),
-    -- Calculate total score for each symbol across ALL concepts/periods (not just podiums)
+    -- Total score calculation for ROLLING window
     SymbolScores AS (
       SELECT 
         symbol, 
         SUM(ranking) as total_score
-      FROM CleanData
-      WHERE period_quarter IN UNNEST(@targetPeriods)
+      FROM RollingData
       GROUP BY 1
     )
     SELECT 
       r.symbol,
-      -- Sum the podiums across all selected periods
+      -- Medals strictly from the anchor period
       COUNTIF(r.position_rank = 1) as gold,
       COUNTIF(r.position_rank = 2) as silver,
       COUNTIF(r.position_rank = 3) as bronze,
+      -- Score from the rolling window
       ANY_VALUE(s.total_score) as total_score
     FROM RankedData r
     JOIN SymbolScores s ON r.symbol = s.symbol
-    -- No additional WHERE needed as CleanData/AggregatedData already filtered by targetPeriods
     WHERE r.position_rank <= 3
     GROUP BY r.symbol
     ORDER BY total_score DESC, gold DESC, silver DESC, bronze DESC, r.symbol ASC
@@ -120,7 +128,7 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
     try {
         const [rows] = await bigquery.query({
             query,
-            params: { targetPeriods },
+            params: { targetPeriods, anchorPeriod },
         });
         return rows as TrophyData[];
     } catch (error) {
