@@ -211,7 +211,7 @@ export function RankingsDashboard({ symbol, currentRolling }: RankingsDashboardP
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-light tracking-tight">{symbol} <span className="text-muted-foreground text-xl">Rankings</span></h1>
+                <h1 className="text-3xl font-light tracking-tight"><span className="text-muted-foreground text-xl">Rankings</span></h1>
 
                 <div className="flex bg-muted/20 p-1 rounded-lg">
                     {[1, 4, 8, 12].map((r) => (

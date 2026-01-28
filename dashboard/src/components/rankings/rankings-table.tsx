@@ -98,6 +98,9 @@ export function RankingsTable({ data, periods, selectedConcepts, onToggleConcept
                                     "w-1 h-1 rounded-full transition-all duration-300",
                                     isSelected ? "bg-yellow-500 scale-125" : "bg-muted-foreground/30 group-hover:bg-yellow-500/50"
                                 )} />
+                                <div className="min-w-[1.5rem] text-xs font-light text-muted-foreground/50 tabular-nums select-none group-hover:text-muted-foreground/80 transition-colors">
+                                    {(expandedRows[row.concept] || !hasChildren) ? (rows.indexOf(row) + 1) : ""}
+                                </div>
                                 <span className={cn(
                                     "truncate text-sm transition-colors",
                                     isSelected ? "text-foreground font-medium" : "text-muted-foreground group-hover:text-foreground"
