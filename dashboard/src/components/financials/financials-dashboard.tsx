@@ -132,7 +132,7 @@ export function FinancialsDashboard({ symbol, income, balance, cashFlow }: Finan
             .sort((a: any, b: any) => new Date(b).getTime() - new Date(a).getTime())
 
         // Displayed periods (top 20)
-        const periods = allPeriods.slice(0, 20)
+        const periods = allPeriods.slice(0, 30)
 
         // Helper to get value and variation
         const getCellData = (concept: string, period: string) => {

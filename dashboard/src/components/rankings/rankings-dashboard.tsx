@@ -163,7 +163,7 @@ export function RankingsDashboard({ symbol, currentRolling }: RankingsDashboardP
 
         const allPeriods = Array.from(new Set(rankingData.map(d => d.period_quarter)))
             .sort((a: any, b: any) => b.localeCompare(a))
-        const periods = allPeriods.slice(0, 20)
+        const periods = allPeriods.slice(0, 30)
 
         // Table Data: Rows are Symbols
         const symbols = Array.from(new Set(rankingData.map(d => d.symbol)))

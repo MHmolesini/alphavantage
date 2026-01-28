@@ -145,7 +145,7 @@ export function PointsDashboard({ symbol, pointsData, currentRolling }: PointsDa
                 return b.localeCompare(a)
             })
 
-        const periods = allPeriods.slice(0, 20)
+        const periods = allPeriods.slice(0, 30)
 
         const getCellData = (concept: string, period: string) => {
             const currentRecord = rawData.find(d => d.concept === concept && d.period_quarter === period)
