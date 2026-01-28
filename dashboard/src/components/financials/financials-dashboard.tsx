@@ -5,6 +5,7 @@ import { useState, useMemo } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FinancialsChart } from "@/components/financials/financials-chart"
 import { FinancialsTable } from "@/components/financials/financials-table"
+import { cn } from "@/lib/utils"
 
 interface FinancialsDashboardProps {
     symbol: string
@@ -15,7 +16,7 @@ interface FinancialsDashboardProps {
 
 export function FinancialsDashboard({ symbol, income, balance, cashFlow }: FinancialsDashboardProps) {
     const [selectedConcepts, setSelectedConcepts] = useState<string[]>([])
-    // Default select "Total Revenue" or "Net Income" if standardizing, but keeping empty is fine too.
+    const [variationType, setVariationType] = useState<"none" | "qoq" | "yoy">("qoq")
 
     const handleToggleConcept = (concept: string) => {
         setSelectedConcepts(prev => {
@@ -23,8 +24,6 @@ export function FinancialsDashboard({ symbol, income, balance, cashFlow }: Finan
                 return prev.filter(c => c !== concept)
             } else {
                 if (prev.length >= 3) {
-                    // Replace the first one (FIFO) or allow max 3? User said "solo hasta 3".
-                    // Let's keep the last 2 and add new one
                     return [...prev.slice(1), concept]
                 }
                 return [...prev, concept]
@@ -32,27 +31,112 @@ export function FinancialsDashboard({ symbol, income, balance, cashFlow }: Finan
         })
     }
 
-    const processData = (rawData: any[]) => {
+    const INCOME_STRUCTURE = [
+        { concept: "totalRevenue" },
+        {
+            concept: "costofGoodsAndServicesSold",
+            children: [
+                { concept: "depreciationAndAmortization" }
+            ]
+        },
+        { concept: "grossProfit" },
+        {
+            concept: "operatingExpenses",
+            children: [
+                {
+                    concept: "sellingGeneralAndAdministrative",
+                    children: [
+                        { concept: "researchAndDevelopment" }
+                    ]
+                }
+            ]
+        },
+        {
+            concept: "operatingIncome",
+            children: [
+                { concept: "interestExpense" },
+                { concept: "interestIncome" }
+            ]
+        },
+        { concept: "incomeTaxExpense" },
+        { concept: "netIncomeFromContinuingOperations" },
+        { concept: "netIncome" },
+        { concept: "eps" },
+        { concept: "ebitda" },
+        { concept: "ebit" }
+    ]
+
+    const processData = (rawData: any[], structure?: any[]) => {
         if (!rawData || rawData.length === 0) return { chartData: [], tableData: [], periods: [] }
 
-        // Unique periods sorted
-        const periods = Array.from(new Set(rawData.map(d => d.period_quarter || d.fiscalDateEnding)))
+        // All periods sorted descending - use all available history first
+        const allPeriods = Array.from(new Set(rawData.map(d => d.period_quarter || d.fiscalDateEnding)))
             .sort((a: any, b: any) => new Date(b).getTime() - new Date(a).getTime())
-            .slice(0, 20)
 
-        // Pivot for Table: Rows are concepts
-        const concepts = Array.from(new Set(rawData.map(d => d.concept)))
-        const tableData = concepts.map(concept => {
-            const row: any = { concept }
-            periods.forEach(period => {
-                const record = rawData.find(d => d.concept === concept && (d.period_quarter === period || d.fiscalDateEnding === period))
-                row[period] = record ? record.value : null
+        // Displayed periods (top 20)
+        const periods = allPeriods.slice(0, 20)
+
+        // Helper to get value and variation
+        const getCellData = (concept: string, period: string) => {
+            const currentRecord = rawData.find(d => d.concept === concept && (d.period_quarter === period || d.fiscalDateEnding === period))
+            const currentValue = currentRecord ? currentRecord.value : null
+
+            if (currentValue === null) return { value: null, variation: null }
+
+            const currentIndex = allPeriods.indexOf(period)
+            let previousPeriod = null
+
+            if (variationType === "qoq") {
+                previousPeriod = allPeriods[currentIndex + 1]
+            } else if (variationType === "yoy") {
+                previousPeriod = allPeriods[currentIndex + 4]
+            }
+
+            let variation = null
+            if (previousPeriod) {
+                const prevRecord = rawData.find(d => d.concept === concept && (d.period_quarter === previousPeriod || d.fiscalDateEnding === previousPeriod))
+                const prevValue = prevRecord ? prevRecord.value : null
+                if (prevValue) {
+                    variation = ((currentValue - prevValue) / Math.abs(prevValue)) * 100
+                }
+            }
+
+            return { value: currentValue, variation }
+        }
+
+        // Helper to build hierarchical rows
+        const buildHierarchy = (struct: any[]): any[] => {
+            return struct.map(item => {
+                const row: any = { concept: item.concept, children: [] }
+
+                // Populate period data
+                periods.forEach(period => {
+                    row[period] = getCellData(item.concept, period)
+                })
+
+                // Recurse for children
+                if (item.children) {
+                    row.children = buildHierarchy(item.children)
+                }
+
+                return row
             })
-            return row
-        })
+        }
 
-        // Pivot for Chart: Rows are periods, Columns are concepts
-        // Chart needs chronological order usually
+        // Helper for flat list (if no structure provided)
+        const buildFlat = () => {
+            const concepts = Array.from(new Set(rawData.map(d => d.concept)))
+            return concepts.map(concept => {
+                const row: any = { concept }
+                periods.forEach(period => {
+                    row[period] = getCellData(concept, period)
+                })
+                return row
+            })
+        }
+
+        const tableData = structure ? buildHierarchy(structure) : buildFlat()
+
         const chartPeriods = [...periods].reverse()
         const chartData = chartPeriods.map(period => {
             const row: any = { period }
@@ -67,9 +151,35 @@ export function FinancialsDashboard({ symbol, income, balance, cashFlow }: Finan
     }
 
     // Memoize processed data for each tab
-    const incomeProcessed = useMemo(() => processData(income), [income, selectedConcepts])
-    const balanceProcessed = useMemo(() => processData(balance), [balance, selectedConcepts])
-    const cashProcessed = useMemo(() => processData(cashFlow), [cashFlow, selectedConcepts])
+    const incomeProcessed = useMemo(() => processData(income, INCOME_STRUCTURE), [income, selectedConcepts, variationType])
+    const balanceProcessed = useMemo(() => processData(balance), [balance, selectedConcepts, variationType])
+    const cashProcessed = useMemo(() => processData(cashFlow), [cashFlow, selectedConcepts, variationType])
+
+    // Render Controls helper
+    const renderControls = () => (
+        <div className="flex justify-end mb-4">
+            <div className="flex items-center space-x-2 bg-muted/50 p-1 rounded-lg">
+                <button
+                    onClick={() => setVariationType("qoq")}
+                    className={cn(
+                        "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                        variationType === "qoq" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                >
+                    QoQ
+                </button>
+                <button
+                    onClick={() => setVariationType("yoy")}
+                    className={cn(
+                        "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                        variationType === "yoy" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                >
+                    YoY
+                </button>
+            </div>
+        </div>
+    )
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -87,6 +197,7 @@ export function FinancialsDashboard({ symbol, income, balance, cashFlow }: Finan
                 {/* Income Tab */}
                 <TabsContent value="income" className="space-y-8 mt-6">
                     <FinancialsChart data={incomeProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    {renderControls()}
                     <FinancialsTable
                         data={incomeProcessed.tableData}
                         periods={incomeProcessed.periods}
@@ -98,6 +209,7 @@ export function FinancialsDashboard({ symbol, income, balance, cashFlow }: Finan
                 {/* Balance Tab */}
                 <TabsContent value="balance" className="space-y-8 mt-6">
                     <FinancialsChart data={balanceProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    {renderControls()}
                     <FinancialsTable
                         data={balanceProcessed.tableData}
                         periods={balanceProcessed.periods}
@@ -109,6 +221,7 @@ export function FinancialsDashboard({ symbol, income, balance, cashFlow }: Finan
                 {/* Cash Flow Tab */}
                 <TabsContent value="cash" className="space-y-8 mt-6">
                     <FinancialsChart data={cashProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    {renderControls()}
                     <FinancialsTable
                         data={cashProcessed.tableData}
                         periods={cashProcessed.periods}
