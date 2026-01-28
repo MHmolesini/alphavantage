@@ -2,8 +2,8 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
-import { ChevronDown, ChevronRight, Trophy } from "lucide-react"
-import { useState, Fragment } from "react"
+import { ChevronDown, ChevronRight, Trophy, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react"
+import { useState, Fragment, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 
 interface RankingsTableProps {
@@ -13,8 +13,14 @@ interface RankingsTableProps {
     onToggleConcept: (concept: string) => void
 }
 
+type SortConfig = {
+    key: string | null
+    direction: 'asc' | 'desc' | null
+}
+
 export function RankingsTable({ data, periods, selectedConcepts, onToggleConcept }: RankingsTableProps) {
     const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({})
+    const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: null })
 
     const toggleRow = (concept: string, e: React.MouseEvent) => {
         e.stopPropagation()
@@ -23,6 +29,33 @@ export function RankingsTable({ data, periods, selectedConcepts, onToggleConcept
             [concept]: !prev[concept]
         }))
     }
+
+    const handleSort = (period: string) => {
+        setSortConfig(current => {
+            if (current.key === period) {
+                if (current.direction === 'asc') return { key: period, direction: 'desc' }
+                if (current.direction === 'desc') return { key: null, direction: null }
+                return { key: null, direction: null } // Should not happen start from null
+            }
+            return { key: period, direction: 'asc' }
+        })
+    }
+
+    const sortedData = useMemo(() => {
+        if (!sortConfig.key || !sortConfig.direction) {
+            return data
+        }
+
+        const sorted = [...data]
+        sorted.sort((a, b) => {
+            const aVal = a[sortConfig.key!]?.position_rank ?? 999999
+            const bVal = b[sortConfig.key!]?.position_rank ?? 999999
+
+            if (sortConfig.direction === 'asc') return aVal - bVal
+            return bVal - aVal
+        })
+        return sorted
+    }, [data, sortConfig])
 
     const renderRows = (rows: any[], depth = 0): React.ReactNode[] => {
         return rows.map((row) => {
@@ -80,8 +113,14 @@ export function RankingsTable({ data, periods, selectedConcepts, onToggleConcept
 
                             return (
                                 <TableCell key={period} className="text-right py-2 align-top">
-                                    <div className="flex flex-col items-end gap-0.5">
-                                        <span className="font-mono text-xs text-foreground font-medium transition-colors">
+                                    <div className={cn(
+                                        "flex flex-col items-end gap-0.5 transition-all duration-300",
+                                        sortConfig.key === period && "scale-105 font-medium"
+                                    )}>
+                                        <span className={cn(
+                                            "font-mono text-xs transition-colors",
+                                            sortConfig.key === period ? "text-foreground" : "text-muted-foreground"
+                                        )}>
                                             {ranking !== null && ranking !== undefined
                                                 ? new Intl.NumberFormat('en-US').format(ranking)
                                                 : '-'}
@@ -93,11 +132,12 @@ export function RankingsTable({ data, periods, selectedConcepts, onToggleConcept
                                                 {position === 3 && <Trophy className="h-3 w-3 text-amber-600" />}
 
                                                 <span className={cn(
-                                                    "text-[10px] font-bold tracking-tight px-1.5 py-0.5 rounded-full border",
+                                                    "text-[10px] font-bold tracking-tight px-1.5 py-0.5 rounded-full border transition-colors",
                                                     position === 1 ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
                                                         position === 2 ? "bg-slate-400/10 text-slate-400 border-slate-400/20" :
                                                             position === 3 ? "bg-amber-600/10 text-amber-600 border-amber-600/20" :
-                                                                "bg-muted/50 text-muted-foreground border-border/50"
+                                                                "bg-muted/50 text-muted-foreground border-border/50",
+                                                    sortConfig.key === period && "bg-primary/10 text-primary border-primary/20"
                                                 )}>
                                                     #{position}
                                                 </span>
@@ -128,14 +168,36 @@ export function RankingsTable({ data, periods, selectedConcepts, onToggleConcept
                                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground pl-8">Symbol</span>
                             </TableHead>
                             {periods.map(period => (
-                                <TableHead key={period} className="text-right min-w-[120px] h-10">
-                                    <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{period}</span>
+                                <TableHead
+                                    key={period}
+                                    className="text-right min-w-[120px] h-10 cursor-pointer hover:bg-muted/50 transition-colors group"
+                                    onClick={() => handleSort(period)}
+                                >
+                                    <div className="flex items-center justify-end gap-2">
+                                        <div className="flex flex-col items-end">
+                                            <span className={cn(
+                                                "text-[10px] font-medium uppercase tracking-wider transition-colors",
+                                                sortConfig.key === period ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+                                            )}>
+                                                {period}
+                                            </span>
+                                        </div>
+                                        <div className="w-3 h-3 flex items-center justify-center">
+                                            {sortConfig.key === period ? (
+                                                sortConfig.direction === 'asc' ?
+                                                    <ArrowUp className="h-3 w-3 text-primary animate-in fade-in zoom-in duration-200" /> :
+                                                    <ArrowDown className="h-3 w-3 text-primary animate-in fade-in zoom-in duration-200" />
+                                            ) : (
+                                                <ArrowUpDown className="h-3 w-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            )}
+                                        </div>
+                                    </div>
                                 </TableHead>
                             ))}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {renderRows(data)}
+                        {renderRows(sortedData)}
                     </TableBody>
                 </Table>
             </div>
