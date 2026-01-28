@@ -79,11 +79,13 @@ export default async function TrophiesPage(props: TrophiesPageProps) {
                 </div>
 
                 {showSymbol && (
-                    <TrophyDetail
-                        symbol={showSymbol}
-                        rolling={rolling}
-                        period={period}
-                    />
+                    <Suspense fallback={<div className="fixed inset-0 z-50 bg-transparent" />}>
+                        <TrophyDetail
+                            symbol={showSymbol}
+                            rolling={rolling}
+                            period={period}
+                        />
+                    </Suspense>
                 )}
             </div>
         </AppLayout>

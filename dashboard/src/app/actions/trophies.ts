@@ -31,10 +31,12 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
     const safeRolling = [1, 4, 8, 12].includes(Number(rollingPeriod)) ? Number(rollingPeriod) : 1
     const predecessors = safeRolling - 1
 
-    // 1. Determine target period
-    let targetPeriod = period;
+    // 1. Determine target periods
+    let targetPeriods: string[] = []
 
-    if (!targetPeriod) {
+    if (period) {
+        targetPeriods = period.split(",")
+    } else {
         const periodQuery = `
         SELECT MAX(period_quarter) as latest_period
         FROM \`development.base\`
@@ -42,14 +44,16 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
       `
         try {
             const [rows] = await bigquery.query({ query: periodQuery });
-            targetPeriod = rows[0]?.latest_period;
+            if (rows[0]?.latest_period) {
+                targetPeriods = [rows[0].latest_period]
+            }
         } catch (error) {
             console.error("Error fetching latest period:", error);
             return [];
         }
     }
 
-    if (!targetPeriod) {
+    if (targetPeriods.length === 0) {
         return [];
     }
 
@@ -74,36 +78,29 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
         normalized_concept as concept, 
         SUM(ranking) as total_ranking
       FROM CleanData
+      WHERE period_quarter IN UNNEST(@targetPeriods)
       GROUP BY 1, 2, 3, 4
     ),
-    RollingData AS (
-      SELECT 
-        *,
-        SUM(total_ranking) OVER (
-          PARTITION BY symbol, base, concept 
-          ORDER BY period_quarter 
-          ROWS BETWEEN ${predecessors} PRECEDING AND CURRENT ROW
-        ) as rolling_ranking
-      FROM AggregatedData
-    ),
+    -- We calculate rank PER periodical snapshot first
     RankedData AS (
       SELECT 
         symbol, 
         base, 
         period_quarter, 
         concept, 
-        rolling_ranking,
-        RANK() OVER (PARTITION BY base, concept, period_quarter ORDER BY rolling_ranking DESC) as position_rank
-      FROM RollingData
+        total_ranking,
+        RANK() OVER (PARTITION BY base, concept, period_quarter ORDER BY total_ranking DESC) as position_rank
+      FROM AggregatedData
     )
     SELECT 
       symbol,
+      -- Sum the podiums across all selected periods
       COUNTIF(position_rank = 1) as gold,
       COUNTIF(position_rank = 2) as silver,
       COUNTIF(position_rank = 3) as bronze
     FROM RankedData
-    WHERE period_quarter = @targetPeriod
-      AND position_rank <= 3
+    -- No additional WHERE needed as CleanData/AggregatedData already filtered by targetPeriods
+    WHERE position_rank <= 3
     GROUP BY symbol
     ORDER BY gold DESC, silver DESC, bronze DESC, symbol ASC
   `
@@ -111,7 +108,7 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
     try {
         const [rows] = await bigquery.query({
             query,
-            params: { targetPeriod },
+            params: { targetPeriods },
         });
         return rows as TrophyData[];
     } catch (error) {

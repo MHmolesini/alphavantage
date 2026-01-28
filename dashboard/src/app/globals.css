@@ -99,6 +99,28 @@
   --border: hsl(240 3.7% 15.9%);
   --input: hsl(240 3.7% 15.9%);
   --ring: hsl(240 4.9% 83.9%);
+  --ring: hsl(240 4.9% 83.9%);
+}
+
+@keyframes water-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.02);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.animate-water-in {
+  animation: water-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 body {
