@@ -89,12 +89,14 @@ export function Sidebar({ className }: { className?: string }) {
                             </Link>
                         </Button>
                         <Button
-                            variant="ghost"
-                            className="w-full justify-start pl-6 opacity-50 cursor-not-allowed"
-                            disabled
+                            asChild
+                            variant={pathname.includes("/rankings") ? "secondary" : "ghost"}
+                            className={cn("w-full justify-start pl-6", !symbol && "opacity-50 pointer-events-none")}
                         >
-                            <Medal className="mr-2 h-4 w-4" />
-                            Rankings
+                            <Link href={symbol ? `/positions/${symbol}/rankings` : '#'}>
+                                <Medal className="mr-2 h-4 w-4" />
+                                Rankings
+                            </Link>
                         </Button>
                     </div>
                 </div>
