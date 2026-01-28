@@ -57,7 +57,8 @@ export function PointsChart({ data, selectedConcepts }: PointsChartProps) {
         const series: any[] = []
 
         selectedConcepts.forEach((concept, index) => {
-            const colorIndex = stringToColorIndex(concept) % colors.length
+            // Use index directly to ensure distinct colors for the currently selected items
+            const colorIndex = index % colors.length
             const colorSet = colors[colorIndex]
 
             // Bar Series for Points (Left Axis)
@@ -125,18 +126,15 @@ export function PointsChart({ data, selectedConcepts }: PointsChartProps) {
                 axisPointer: { type: 'cross' }
             },
             legend: {
-                data: selectedConcepts.map(c => [`${c}`, `${c} (Rank)`]).flat(), // Show both in legend? Maybe just concept name + implied? Let's show all for clarity or filter.
-                // Actually showing duplicate legend items might be cluttered. 
-                // Let's try to just show the Concept Name once, but ECharts maps legend to series name.
-                // We'll leave it detailed for now or the user can hide one.
-                show: false, // Hiding legend to look cleaner as requested "elegante"? Or maybe bottom.
-                // Let's keep it visible but maybe simplified manually? No, keeping standard behavior data-binding is safer.
+                data: selectedConcepts.map(c => [`${c}`, `${c} (Rank)`]).flat(),
+                show: true,
                 bottom: 0,
+                left: 'center',
                 textStyle: { color: isDark ? '#a1a1aa' : '#71717a' },
                 itemWidth: 12, itemHeight: 12
             },
             grid: {
-                left: '2%', right: '4%', bottom: '10%', top: '10%', containLabel: true
+                left: '2%', right: '4%', bottom: '15%', top: '10%', containLabel: true
             },
             xAxis: {
                 type: 'category',
