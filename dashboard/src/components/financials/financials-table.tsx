@@ -1,18 +1,9 @@
-
 "use client"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
-
-interface FinancialsTableProps {
-    data: any[] // Data should be structured as rows: concept, and columns: periods
-    periods: string[]
-    selectedConcepts: string[]
-    onToggleConcept: (concept: string) => void
-}
-
 import { ChevronDown, ChevronRight } from "lucide-react"
-import { useState } from "react"
+import { useState, Fragment } from "react"
 import { Button } from "@/components/ui/button"
 
 interface FinancialsTableProps {
@@ -42,9 +33,8 @@ export function FinancialsTable({ data, periods, selectedConcepts, onToggleConce
             const isExpanded = expandedRows[row.concept]
 
             return (
-                <>
+                <Fragment key={row.concept}>
                     <TableRow
-                        key={row.concept}
                         className={cn(
                             "cursor-pointer transition-all duration-200 border-b border-border/40 hover:bg-muted/30 group",
                             isSelected && "bg-muted/40"
@@ -112,7 +102,7 @@ export function FinancialsTable({ data, periods, selectedConcepts, onToggleConce
                         })}
                     </TableRow>
                     {hasChildren && isExpanded && renderRows(row.children, depth + 1)}
-                </>
+                </Fragment>
             )
         })
     }
