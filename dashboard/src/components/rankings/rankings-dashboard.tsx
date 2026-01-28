@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { PointsChart } from "@/components/positions/points-chart"
 import { RankingsTable } from "@/components/rankings/rankings-table"
 import { cn } from "@/lib/utils"
-import { getConceptRankings, getCategoryRankings } from "@/app/actions/financials"
+import { getConceptRankings, getCategoryRankings, getGlobalRankings } from "@/app/actions/financials"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Loader2 } from "lucide-react"
 
@@ -127,13 +127,20 @@ export function RankingsDashboard({ symbol, currentRolling }: RankingsDashboardP
         const fetchData = async () => {
             setIsLoading(true)
             try {
+                let data;
+                if (selectedCategory === 'total') {
+                    data = await getGlobalRankings(currentRolling)
+                    setRankingData(data)
+                    setIsLoading(false)
+                    return
+                }
+
                 // Determine base from selectedCategory
                 let base = selectedCategory
                 if (selectedCategory === 'income') base = 'income_statements'
                 if (selectedCategory === 'balance') base = 'balance_sheet'
                 if (selectedCategory === 'cash') base = 'cash_flow'
 
-                let data;
                 if (selectedConcept) {
                     data = await getConceptRankings(base, selectedConcept, currentRolling)
                 } else {
@@ -232,7 +239,13 @@ export function RankingsDashboard({ symbol, currentRolling }: RankingsDashboardP
             </div>
 
             <Tabs defaultValue="profitability" value={selectedCategory} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 bg-muted/20 p-1 group/list h-auto">
+                <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 bg-muted/20 p-1 group/list h-auto">
+                    <TabsTrigger
+                        value="total"
+                        className="capitalize transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer text-primary/90 font-medium"
+                    >
+                        Total
+                    </TabsTrigger>
                     {Object.keys(STRUCTURES).map(key => (
                         <TabsTrigger
                             key={key}
@@ -251,36 +264,48 @@ export function RankingsDashboard({ symbol, currentRolling }: RankingsDashboardP
                             Concepts
                         </span>
 
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedConcept(null)}
-                            className={cn(
-                                "justify-start text-sm h-9 px-3 w-full text-left font-medium mb-1",
-                                !selectedConcept
-                                    ? "bg-primary/10 text-primary hover:bg-primary/15"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                            )}
-                        >
-                            Total {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
-                        </Button>
-
-                        {STRUCTURES[selectedCategory]?.map((item) => (
+                        {selectedCategory === 'total' ? (
                             <Button
-                                key={item.concept}
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => setSelectedConcept(item.concept)}
-                                className={cn(
-                                    "justify-start text-sm h-9 px-3 w-full text-left font-normal",
-                                    selectedConcept === item.concept
-                                        ? "bg-primary/10 text-primary font-medium hover:bg-primary/15"
-                                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                                )}
+                                className="justify-start text-sm h-9 px-3 w-full text-left font-medium mb-1 bg-primary/10 text-primary hover:bg-primary/15"
                             >
-                                {item.concept}
+                                Global Score
                             </Button>
-                        ))}
+                        ) : (
+                            <>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedConcept(null)}
+                                    className={cn(
+                                        "justify-start text-sm h-9 px-3 w-full text-left font-medium mb-1",
+                                        !selectedConcept
+                                            ? "bg-primary/10 text-primary hover:bg-primary/15"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                    )}
+                                >
+                                    Total {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
+                                </Button>
+
+                                {STRUCTURES[selectedCategory]?.map((item) => (
+                                    <Button
+                                        key={item.concept}
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setSelectedConcept(item.concept)}
+                                        className={cn(
+                                            "justify-start text-sm h-9 px-3 w-full text-left font-normal",
+                                            selectedConcept === item.concept
+                                                ? "bg-primary/10 text-primary font-medium hover:bg-primary/15"
+                                                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                        )}
+                                    >
+                                        {item.concept}
+                                    </Button>
+                                ))}
+                            </>
+                        )}
                     </div>
 
                     {/* Right Content */}

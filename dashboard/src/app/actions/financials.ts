@@ -290,3 +290,66 @@ export async function getCategoryRankings(base: string, rollingPeriod: number = 
     return [];
   }
 }
+export async function getGlobalRankings(rollingPeriod: number = 1) {
+  console.log(`[getGlobalRankings] Fetching GLOBAL RANKINGS with rolling ${rollingPeriod}`);
+
+  const safeRolling = [1, 4, 8, 12].includes(Number(rollingPeriod)) ? Number(rollingPeriod) : 1
+  const predecessors = safeRolling - 1
+
+  const query = `
+    WITH CleanData AS (
+      SELECT 
+        symbol, 
+        base, 
+        period_quarter, 
+        ranking
+      FROM \`development.base\`
+      WHERE ranking IS NOT NULL
+        AND period_quarter IS NOT NULL
+        AND ranking > 0
+    ),
+    AggregatedData AS (
+      SELECT 
+        symbol, 
+        period_quarter, 
+        'Global' as concept,
+        SUM(ranking) as total_ranking
+      FROM CleanData
+      GROUP BY 1, 2, 3
+    ),
+    RollingData AS (
+      SELECT 
+        *,
+        SUM(total_ranking) OVER (
+          PARTITION BY symbol 
+          ORDER BY period_quarter 
+          ROWS BETWEEN ${predecessors} PRECEDING AND CURRENT ROW
+        ) as rolling_ranking
+      FROM AggregatedData
+    ),
+    RankedData AS (
+      SELECT 
+        symbol, 
+        period_quarter, 
+        concept,
+        rolling_ranking as ranking,
+        RANK() OVER (PARTITION BY period_quarter ORDER BY rolling_ranking DESC) as position_rank
+      FROM RollingData
+    )
+    SELECT 
+      symbol, 'global' as base, period_quarter, concept, ranking, position_rank
+    FROM RankedData
+    ORDER BY position_rank ASC, period_quarter DESC
+    LIMIT 50000
+  `
+
+  try {
+    const [rows] = await bigquery.query({
+      query,
+    });
+    return rows;
+  } catch (error) {
+    console.error("BigQuery Error:", error);
+    return [];
+  }
+}
