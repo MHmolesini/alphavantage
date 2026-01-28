@@ -2,21 +2,23 @@
 
 import { LayoutDashboard, FileText, PieChart, Settings, Calculator, TrendingUp, ArrowUpRight, Trophy, Medal, Award } from "lucide-react"
 import Link from "next/link"
-import { useParams, usePathname } from "next/navigation"
-
+import { useParams, usePathname, useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
 export function Sidebar({ className, currentSymbol }: { className?: string, currentSymbol?: string }) {
     const pathname = usePathname()
     const params = useParams()
-    const urlSymbol = params.symbol as string | undefined
+    const searchParams = useSearchParams()
 
-    // Use URL symbol if available, otherwise fallback to prop (dashboard state)
-    const symbol = urlSymbol || currentSymbol
+    const urlSymbol = params.symbol as string | undefined
+    const showSymbol = searchParams.get("show")
+
+    // Use URL symbol if available, otherwise try 'show' param (trophies), otherwise fallback to prop
+    const symbol = urlSymbol || showSymbol || currentSymbol
 
     return (
-        <div className={cn("pb-12 min-h-screen border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60", className)}>
+        <div className={cn("pb-12 min-h-screen border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 relative z-[60]", className)}>
             <div className="space-y-4 py-4">
                 <div className="px-3 py-2">
                     <h2 className="mb-2 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">

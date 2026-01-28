@@ -22,8 +22,11 @@ export default async function TrophiesPage(props: TrophiesPageProps) {
     const trophiesData = await getTrophiesData(rolling, period)
     const periods = await getTrophiesPeriods()
 
+    // Determine default symbol for sidebar navigation (use selected symbol or top ranking one)
+    const defaultSymbol = showSymbol || (trophiesData.length > 0 ? trophiesData[0].symbol : undefined)
+
     return (
-        <AppLayout>
+        <AppLayout symbol={defaultSymbol}>
             <div className="space-y-6 animate-in fade-in duration-500">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>
