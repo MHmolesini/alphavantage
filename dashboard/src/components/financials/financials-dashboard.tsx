@@ -12,9 +12,24 @@ interface FinancialsDashboardProps {
     income: any[]
     balance: any[]
     cashFlow: any[]
+    profitability: any[]
+    liquidity: any[]
+    indebtedness: any[]
+    management: any[]
+    assessment: any[]
 }
 
-export function FinancialsDashboard({ symbol, income, balance, cashFlow }: FinancialsDashboardProps) {
+export function FinancialsDashboard({
+    symbol,
+    income,
+    balance,
+    cashFlow,
+    profitability,
+    liquidity,
+    indebtedness,
+    management,
+    assessment
+}: FinancialsDashboardProps) {
     const [selectedConcepts, setSelectedConcepts] = useState<string[]>([])
     const [variationType, setVariationType] = useState<"none" | "qoq" | "yoy">("qoq")
 
@@ -213,6 +228,13 @@ export function FinancialsDashboard({ symbol, income, balance, cashFlow }: Finan
     const balanceProcessed = useMemo(() => processData(balance, BALANCE_STRUCTURE), [balance, selectedConcepts, variationType])
     const cashProcessed = useMemo(() => processData(cashFlow), [cashFlow, selectedConcepts, variationType])
 
+    // New categories (Flat structure)
+    const profitabilityProcessed = useMemo(() => processData(profitability), [profitability, selectedConcepts, variationType])
+    const liquidityProcessed = useMemo(() => processData(liquidity), [liquidity, selectedConcepts, variationType])
+    const indebtednessProcessed = useMemo(() => processData(indebtedness), [indebtedness, selectedConcepts, variationType])
+    const managementProcessed = useMemo(() => processData(management), [management, selectedConcepts, variationType])
+    const assessmentProcessed = useMemo(() => processData(assessment), [assessment, selectedConcepts, variationType])
+
     // Render Controls helper
     const renderControls = () => (
         <div className="flex justify-end mb-4">
@@ -246,25 +268,15 @@ export function FinancialsDashboard({ symbol, income, balance, cashFlow }: Finan
             </div>
 
             <Tabs defaultValue="income" className="w-full" onValueChange={() => setSelectedConcepts([])}>
-                <TabsList className="grid w-full grid-cols-3 max-w-[400px] bg-muted/20 p-1 group/list">
-                    <TabsTrigger
-                        value="income"
-                        className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer"
-                    >
-                        Income
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="balance"
-                        className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer"
-                    >
-                        Balance
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="cash"
-                        className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer"
-                    >
-                        Cash Flow
-                    </TabsTrigger>
+                <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 bg-muted/20 p-1 group/list h-auto">
+                    <TabsTrigger value="income" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Income</TabsTrigger>
+                    <TabsTrigger value="balance" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Balance</TabsTrigger>
+                    <TabsTrigger value="cash" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Cash Flow</TabsTrigger>
+                    <TabsTrigger value="profitability" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Profitability</TabsTrigger>
+                    <TabsTrigger value="liquidity" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Liquidity</TabsTrigger>
+                    <TabsTrigger value="indebtedness" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Indebtedness</TabsTrigger>
+                    <TabsTrigger value="management" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Management</TabsTrigger>
+                    <TabsTrigger value="assessment" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Assessment</TabsTrigger>
                 </TabsList>
 
                 {/* Income Tab */}
@@ -298,6 +310,66 @@ export function FinancialsDashboard({ symbol, income, balance, cashFlow }: Finan
                     <FinancialsTable
                         data={cashProcessed.tableData}
                         periods={cashProcessed.periods}
+                        selectedConcepts={selectedConcepts}
+                        onToggleConcept={handleToggleConcept}
+                    />
+                </TabsContent>
+
+                {/* Profitability Tab */}
+                <TabsContent value="profitability" className="space-y-8 mt-6">
+                    <FinancialsChart data={profitabilityProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    {renderControls()}
+                    <FinancialsTable
+                        data={profitabilityProcessed.tableData}
+                        periods={profitabilityProcessed.periods}
+                        selectedConcepts={selectedConcepts}
+                        onToggleConcept={handleToggleConcept}
+                    />
+                </TabsContent>
+
+                {/* Liquidity Tab */}
+                <TabsContent value="liquidity" className="space-y-8 mt-6">
+                    <FinancialsChart data={liquidityProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    {renderControls()}
+                    <FinancialsTable
+                        data={liquidityProcessed.tableData}
+                        periods={liquidityProcessed.periods}
+                        selectedConcepts={selectedConcepts}
+                        onToggleConcept={handleToggleConcept}
+                    />
+                </TabsContent>
+
+                {/* Indebtedness Tab */}
+                <TabsContent value="indebtedness" className="space-y-8 mt-6">
+                    <FinancialsChart data={indebtednessProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    {renderControls()}
+                    <FinancialsTable
+                        data={indebtednessProcessed.tableData}
+                        periods={indebtednessProcessed.periods}
+                        selectedConcepts={selectedConcepts}
+                        onToggleConcept={handleToggleConcept}
+                    />
+                </TabsContent>
+
+                {/* Management Tab */}
+                <TabsContent value="management" className="space-y-8 mt-6">
+                    <FinancialsChart data={managementProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    {renderControls()}
+                    <FinancialsTable
+                        data={managementProcessed.tableData}
+                        periods={managementProcessed.periods}
+                        selectedConcepts={selectedConcepts}
+                        onToggleConcept={handleToggleConcept}
+                    />
+                </TabsContent>
+
+                {/* Assessment Tab */}
+                <TabsContent value="assessment" className="space-y-8 mt-6">
+                    <FinancialsChart data={assessmentProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    {renderControls()}
+                    <FinancialsTable
+                        data={assessmentProcessed.tableData}
+                        periods={assessmentProcessed.periods}
                         selectedConcepts={selectedConcepts}
                         onToggleConcept={handleToggleConcept}
                     />
