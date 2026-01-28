@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
 import { PointsChart } from "@/components/positions/points-chart"
 import { PointsTable } from "@/components/positions/points-table"
 import { cn } from "@/lib/utils"
@@ -9,10 +11,16 @@ import { cn } from "@/lib/utils"
 interface PointsDashboardProps {
     symbol: string
     pointsData: any[]
+    currentRolling: number
 }
 
-export function PointsDashboard({ symbol, pointsData }: PointsDashboardProps) {
+export function PointsDashboard({ symbol, pointsData, currentRolling }: PointsDashboardProps) {
     const [selectedConcepts, setSelectedConcepts] = useState<string[]>([])
+    const router = useRouter()
+
+    const handleRollingChange = (val: number) => {
+        router.push(`?rolling=${val}`)
+    }
 
     const handleToggleConcept = (concept: string) => {
         setSelectedConcepts(prev => {
@@ -187,6 +195,23 @@ export function PointsDashboard({ symbol, pointsData }: PointsDashboardProps) {
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-light tracking-tight">{symbol} <span className="text-muted-foreground text-xl">Points & Rankings</span></h1>
+
+                <div className="flex bg-muted/20 p-1 rounded-lg">
+                    {[1, 4, 8, 12].map((r) => (
+                        <Button
+                            key={r}
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRollingChange(r)}
+                            className={cn(
+                                "text-xs font-medium px-3 h-7",
+                                currentRolling === r ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            Ranking {r}
+                        </Button>
+                    ))}
+                </div>
             </div>
 
             <Tabs defaultValue="income" className="w-full" onValueChange={() => setSelectedConcepts([])}>

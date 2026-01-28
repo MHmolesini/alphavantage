@@ -81,8 +81,13 @@ export async function getSymbols() {
   }
 }
 
-export async function getSymbolPoints(symbol: string) {
-  console.log(`[getSymbolPoints] Fetching for ${symbol}`);
+export async function getSymbolPoints(symbol: string, rollingPeriod: number = 1) {
+  console.log(`[getSymbolPoints] Fetching for ${symbol} with rolling period ${rollingPeriod}`);
+
+  // Safe integer check for rolling period to prevent SQL injection if passed indirectly
+  const safeRolling = [1, 4, 8, 12].includes(Number(rollingPeriod)) ? Number(rollingPeriod) : 1
+  const predecessors = safeRolling - 1
+
   const query = `
     WITH CleanData AS (
       SELECT 
@@ -107,32 +112,42 @@ export async function getSymbolPoints(symbol: string) {
       FROM CleanData
       GROUP BY 1, 2, 3, 4
     ),
+    RollingData AS (
+      SELECT 
+        *,
+        SUM(total_ranking) OVER (
+          PARTITION BY symbol, base, concept 
+          ORDER BY period_quarter 
+          ROWS BETWEEN ${predecessors} PRECEDING AND CURRENT ROW
+        ) as rolling_ranking
+      FROM AggregatedData
+    ),
     RankedData AS (
       SELECT 
         symbol, 
         base, 
         period_quarter, 
         concept, 
-        total_ranking as ranking,
-        RANK() OVER (PARTITION BY base, concept, period_quarter ORDER BY total_ranking DESC) as position_rank
-      FROM AggregatedData
+        rolling_ranking as ranking,
+        RANK() OVER (PARTITION BY base, concept, period_quarter ORDER BY rolling_ranking DESC) as position_rank
+      FROM RollingData
     )
     SELECT 
       symbol, base, period_quarter, concept, ranking, position_rank
     FROM RankedData
     WHERE symbol = @symbol
     ORDER BY period_quarter DESC
+    LIMIT 20000
   `
 
   try {
     const [rows] = await bigquery.query({
       query,
       params: { symbol },
-    })
-    console.log(`[getSymbolPoints] Found ${rows.length} rows`);
+    });
     return rows;
   } catch (error) {
-    console.error("BigQuery Error (getSymbolPoints):", error)
-    return []
+    console.error("BigQuery Error:", error);
+    return [];
   }
 }
