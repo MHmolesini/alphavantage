@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { PointsChart } from "@/components/positions/points-chart"
 import { RankingsTable } from "@/components/rankings/rankings-table"
 import { cn } from "@/lib/utils"
-import { getConceptRankings } from "@/app/actions/financials"
+import { getConceptRankings, getCategoryRankings } from "@/app/actions/financials"
 import { Loader2 } from "lucide-react"
 
 interface RankingsDashboardProps {
@@ -17,7 +17,7 @@ interface RankingsDashboardProps {
 
 export function RankingsDashboard({ symbol, currentRolling }: RankingsDashboardProps) {
     const [selectedCategory, setSelectedCategory] = useState("profitability")
-    const [selectedConcept, setSelectedConcept] = useState<string>("GrossMargin")
+    const [selectedConcept, setSelectedConcept] = useState<string | null>(null)
     const [rankingData, setRankingData] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [chartTickers, setChartTickers] = useState<string[]>([symbol])
@@ -123,8 +123,6 @@ export function RankingsDashboard({ symbol, currentRolling }: RankingsDashboardP
 
     // Effect to fetch data when concept changes
     useEffect(() => {
-        if (!selectedConcept) return
-
         const fetchData = async () => {
             setIsLoading(true)
             try {
@@ -134,7 +132,13 @@ export function RankingsDashboard({ symbol, currentRolling }: RankingsDashboardP
                 if (selectedCategory === 'balance') base = 'balance_sheet'
                 if (selectedCategory === 'cash') base = 'cash_flow'
 
-                const data = await getConceptRankings(base, selectedConcept, currentRolling)
+                let data;
+                if (selectedConcept) {
+                    data = await getConceptRankings(base, selectedConcept, currentRolling)
+                } else {
+                    // Fetch category aggregate (All concepts)
+                    data = await getCategoryRankings(base, currentRolling)
+                }
                 setRankingData(data)
             } catch (err) {
                 console.error(err)
@@ -149,9 +153,8 @@ export function RankingsDashboard({ symbol, currentRolling }: RankingsDashboardP
     // Update selected Concept default when Category changes
     const handleTabChange = (val: string) => {
         setSelectedCategory(val)
-        // Set first concept of the new category
-        const firstConcept = STRUCTURES[val]?.[0]?.concept
-        if (firstConcept) setSelectedConcept(firstConcept)
+        // Default to NULL to show aggregated rankings
+        setSelectedConcept(null)
     }
 
     // Process Data for Chart and Table
@@ -246,6 +249,21 @@ export function RankingsDashboard({ symbol, currentRolling }: RankingsDashboardP
                         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 pl-2">
                             Concepts
                         </span>
+
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedConcept(null)}
+                            className={cn(
+                                "justify-start text-sm h-9 px-3 w-full text-left font-medium mb-1",
+                                !selectedConcept
+                                    ? "bg-primary/10 text-primary hover:bg-primary/15"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                            )}
+                        >
+                            Total {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
+                        </Button>
+
                         {STRUCTURES[selectedCategory]?.map((item) => (
                             <Button
                                 key={item.concept}
