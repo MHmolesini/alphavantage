@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FinancialsChart } from "@/components/financials/financials-chart"
+import { PointsChart } from "@/components/positions/points-chart"
 import { PointsTable } from "@/components/positions/points-table"
 import { cn } from "@/lib/utils"
 
@@ -27,8 +27,6 @@ export function PointsDashboard({ symbol, pointsData }: PointsDashboardProps) {
         })
     }
 
-    // Reuse hierarchies or define simplified ones. 
-    // Assuming concepts match FinancialsDashboard.
     const INCOME_STRUCTURE = [
         { concept: "totalRevenue" },
         { concept: "costofGoodsAndServicesSold" },
@@ -128,9 +126,6 @@ export function PointsDashboard({ symbol, pointsData }: PointsDashboardProps) {
     ]
 
     const processData = (baseFilter: string | string[], structure: any[]) => {
-        // Filter data for this base (e.g. 'income_statement', 'profitability'?)
-        // The action returns 'base' column.
-        // bases: 'income_statement', 'balance_sheet', 'cash_flow'
         const rawData = pointsData.filter(d =>
             Array.isArray(baseFilter) ? baseFilter.includes(d.base) : d.base === baseFilter
         )
@@ -139,15 +134,11 @@ export function PointsDashboard({ symbol, pointsData }: PointsDashboardProps) {
 
         const allPeriods = Array.from(new Set(rawData.map(d => d.period_quarter)))
             .sort((a: any, b: any) => {
-                // Period format "YYYY QX"? Or just sort strings descending? 
-                // data is sorted by period_quarter DESC in query.
-                // But let's ensure consistency.
                 return b.localeCompare(a)
             })
 
         const periods = allPeriods.slice(0, 20)
 
-        // Helper to get score and rank
         const getCellData = (concept: string, period: string) => {
             const currentRecord = rawData.find(d => d.concept === concept && d.period_quarter === period)
             if (!currentRecord) return { ranking: null, position_rank: null }
@@ -158,15 +149,11 @@ export function PointsDashboard({ symbol, pointsData }: PointsDashboardProps) {
         }
 
         const buildWrapper = (struct: any[]) => {
-            // Supports basic hierarchy just for structure, but data is flat in table logic usually
-            // My PointsTable logic handles children recursion if data has 'children'.
             return struct.map(item => {
                 const row: any = { concept: item.concept, children: [] }
                 periods.forEach(period => {
                     row[period] = getCellData(item.concept, period)
                 })
-                // No deep hierarchy in my structure definitions above for now to save space, 
-                // but can add if needed.
                 return row
             })
         }
@@ -178,7 +165,8 @@ export function PointsDashboard({ symbol, pointsData }: PointsDashboardProps) {
             const row: any = { period }
             selectedConcepts.forEach(concept => {
                 const record = rawData.find(d => d.concept === concept && d.period_quarter === period)
-                row[concept] = record ? record.ranking : null // Chart plots Ranking Value
+                row[`${concept}_points`] = record ? record.ranking : null
+                row[`${concept}_rank`] = record ? record.position_rank : null
             })
             return row
         })
@@ -214,42 +202,42 @@ export function PointsDashboard({ symbol, pointsData }: PointsDashboardProps) {
                 </TabsList>
 
                 <TabsContent value="income" className="space-y-8 mt-6">
-                    <FinancialsChart data={incomeProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    <PointsChart data={incomeProcessed.chartData} selectedConcepts={selectedConcepts} />
                     <PointsTable data={incomeProcessed.tableData} periods={incomeProcessed.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
                 </TabsContent>
 
                 <TabsContent value="balance" className="space-y-8 mt-6">
-                    <FinancialsChart data={balanceProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    <PointsChart data={balanceProcessed.chartData} selectedConcepts={selectedConcepts} />
                     <PointsTable data={balanceProcessed.tableData} periods={balanceProcessed.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
                 </TabsContent>
 
                 <TabsContent value="cash" className="space-y-8 mt-6">
-                    <FinancialsChart data={cashProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    <PointsChart data={cashProcessed.chartData} selectedConcepts={selectedConcepts} />
                     <PointsTable data={cashProcessed.tableData} periods={cashProcessed.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
                 </TabsContent>
 
                 <TabsContent value="profitability" className="space-y-8 mt-6">
-                    <FinancialsChart data={profitabilityProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    <PointsChart data={profitabilityProcessed.chartData} selectedConcepts={selectedConcepts} />
                     <PointsTable data={profitabilityProcessed.tableData} periods={profitabilityProcessed.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
                 </TabsContent>
 
                 <TabsContent value="liquidity" className="space-y-8 mt-6">
-                    <FinancialsChart data={liquidityProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    <PointsChart data={liquidityProcessed.chartData} selectedConcepts={selectedConcepts} />
                     <PointsTable data={liquidityProcessed.tableData} periods={liquidityProcessed.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
                 </TabsContent>
 
                 <TabsContent value="indebtedness" className="space-y-8 mt-6">
-                    <FinancialsChart data={indebtednessProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    <PointsChart data={indebtednessProcessed.chartData} selectedConcepts={selectedConcepts} />
                     <PointsTable data={indebtednessProcessed.tableData} periods={indebtednessProcessed.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
                 </TabsContent>
 
                 <TabsContent value="management" className="space-y-8 mt-6">
-                    <FinancialsChart data={managementProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    <PointsChart data={managementProcessed.chartData} selectedConcepts={selectedConcepts} />
                     <PointsTable data={managementProcessed.tableData} periods={managementProcessed.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
                 </TabsContent>
 
                 <TabsContent value="assessment" className="space-y-8 mt-6">
-                    <FinancialsChart data={assessmentProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    <PointsChart data={assessmentProcessed.chartData} selectedConcepts={selectedConcepts} />
                     <PointsTable data={assessmentProcessed.tableData} periods={assessmentProcessed.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
                 </TabsContent>
             </Tabs>
