@@ -60,6 +60,20 @@ export default async function TrophiesPage(props: TrophiesPageProps) {
                     </div>
                 </div>
 
+                <div className="flex items-center gap-6 text-sm text-muted-foreground border-b border-border/40 pb-4">
+                    <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground">{trophiesData.length}</span>
+                        <span>Tickets</span>
+                    </div>
+                    <div className="h-4 w-[1px] bg-border/60" />
+                    <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground">
+                            {trophiesData.reduce((acc, curr) => acc + curr.gold + curr.silver + curr.bronze, 0)}
+                        </span>
+                        <span>Total Trophies</span>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {trophiesData.map((data) => (
                         <TrophyCard
