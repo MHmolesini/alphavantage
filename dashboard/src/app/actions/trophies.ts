@@ -7,6 +7,7 @@ export type TrophyData = {
     gold: number   // Position 1 counts
     silver: number // Position 2 counts
     bronze: number // Position 3 counts
+    total_score: number // Weighted score: (G*3 + S*2 + B*1)
 }
 
 export async function getTrophiesPeriods() {
@@ -91,18 +92,29 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
         total_ranking,
         RANK() OVER (PARTITION BY base, concept, period_quarter ORDER BY total_ranking DESC) as position_rank
       FROM AggregatedData
+    ),
+    -- Calculate total score for each symbol across ALL concepts/periods (not just podiums)
+    SymbolScores AS (
+      SELECT 
+        symbol, 
+        SUM(ranking) as total_score
+      FROM CleanData
+      WHERE period_quarter IN UNNEST(@targetPeriods)
+      GROUP BY 1
     )
     SELECT 
-      symbol,
+      r.symbol,
       -- Sum the podiums across all selected periods
-      COUNTIF(position_rank = 1) as gold,
-      COUNTIF(position_rank = 2) as silver,
-      COUNTIF(position_rank = 3) as bronze
-    FROM RankedData
+      COUNTIF(r.position_rank = 1) as gold,
+      COUNTIF(r.position_rank = 2) as silver,
+      COUNTIF(r.position_rank = 3) as bronze,
+      ANY_VALUE(s.total_score) as total_score
+    FROM RankedData r
+    JOIN SymbolScores s ON r.symbol = s.symbol
     -- No additional WHERE needed as CleanData/AggregatedData already filtered by targetPeriods
-    WHERE position_rank <= 3
-    GROUP BY symbol
-    ORDER BY gold DESC, silver DESC, bronze DESC, symbol ASC
+    WHERE r.position_rank <= 3
+    GROUP BY r.symbol
+    ORDER BY total_score DESC, gold DESC, silver DESC, bronze DESC, r.symbol ASC
   `
 
     try {

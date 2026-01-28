@@ -82,6 +82,7 @@ export default async function TrophiesPage(props: TrophiesPageProps) {
                             gold={data.gold}
                             silver={data.silver}
                             bronze={data.bronze}
+                            score={data.total_score}
                             searchParams={searchParams}
                         />
                     ))}

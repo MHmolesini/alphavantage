@@ -7,10 +7,11 @@ interface TrophyCardProps {
     gold: number
     silver: number
     bronze: number
+    score?: number
     searchParams?: any
 }
 
-export function TrophyCard({ symbol, gold, silver, bronze, searchParams }: TrophyCardProps) {
+export function TrophyCard({ symbol, gold, silver, bronze, score, searchParams }: TrophyCardProps) {
     const params = new URLSearchParams(searchParams)
     params.set("show", symbol)
 
@@ -55,9 +56,17 @@ export function TrophyCard({ symbol, gold, silver, bronze, searchParams }: Troph
                     </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t flex justify-between items-center text-xs text-muted-foreground">
-                    <span>Total Podiums</span>
-                    <span className="font-mono font-medium">{gold + silver + bronze}</span>
+                <div className="mt-4 pt-4 border-t flex items-center justify-between text-xs text-muted-foreground">
+                    <div>
+                        <span>Podiums: </span>
+                        <span className="font-mono font-medium text-foreground">{gold + silver + bronze}</span>
+                    </div>
+                    {score !== undefined && (
+                        <div>
+                            <span>Score: </span>
+                            <span className="font-mono font-medium text-foreground">{score}</span>
+                        </div>
+                    )}
                 </div>
             </div>
 
