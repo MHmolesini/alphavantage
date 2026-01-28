@@ -89,11 +89,15 @@ export function PointsTable({ data, periods, selectedConcepts, onToggleConcept }
                                         {position !== null && position !== undefined && (
                                             <div className="flex items-center gap-1">
                                                 {position === 1 && <Trophy className="h-3 w-3 text-yellow-500" />}
+                                                {position === 2 && <Trophy className="h-3 w-3 text-slate-400" />}
+                                                {position === 3 && <Trophy className="h-3 w-3 text-amber-600" />}
+
                                                 <span className={cn(
-                                                    "text-[10px] font-bold tracking-tight px-1.5 py-0.5 rounded-full",
-                                                    position === 1 ? "bg-yellow-500/10 text-yellow-500" :
-                                                        position <= 3 ? "bg-muted text-muted-foreground" :
-                                                            "text-muted-foreground/60"
+                                                    "text-[10px] font-bold tracking-tight px-1.5 py-0.5 rounded-full border",
+                                                    position === 1 ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
+                                                        position === 2 ? "bg-slate-400/10 text-slate-400 border-slate-400/20" :
+                                                            position === 3 ? "bg-amber-600/10 text-amber-600 border-amber-600/20" :
+                                                                "bg-muted/50 text-muted-foreground border-border/50"
                                                 )}>
                                                     #{position}
                                                 </span>
