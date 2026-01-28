@@ -30,8 +30,8 @@ export function TrophyDetailDialog({ symbol, children, summary }: TrophyDetailDi
 
     return (
         <Dialog open={true} onOpenChange={handleOpenChange}>
-            <DialogContent className="max-w-4xl h-[45vh] flex flex-col p-0 gap-0 bg-background/95 backdrop-blur-md border border-border/50 shadow-2xl overflow-hidden">
-                <DialogHeader className="p-6 pb-4 border-b shrink-0 flex flex-row items-center justify-between space-y-0">
+            <DialogContent className="max-w-5xl h-[55vh] flex flex-col p-0 gap-0 bg-background/80 backdrop-blur-xl border border-border/50 shadow-2xl overflow-hidden">
+                <DialogHeader className="p-6 pb-4 border-b shrink-0 flex flex-row items-center justify-between space-y-0 text-foreground">
                     <div>
                         <DialogTitle className="text-3xl font-light tracking-tight">{symbol}</DialogTitle>
                         <DialogDescription>Ranking performance detail for the selected period.</DialogDescription>
