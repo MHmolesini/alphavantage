@@ -112,7 +112,7 @@ export function FinancialsTable({ data, periods, selectedConcepts, onToggleConce
     }
 
     return (
-        <div className="w-full border rounded-xl overflow-hidden shadow-sm bg-card">
+        <div className="w-full border border-border/50 rounded-xl overflow-hidden shadow-sm bg-muted/20">
             <div className="overflow-x-auto relative">
                 <Table>
                     <TableHeader>
