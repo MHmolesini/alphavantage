@@ -2,6 +2,7 @@ import { Suspense } from "react"
 import { getTrophiesData, getTrophiesPeriods } from "@/app/actions/trophies"
 import { TrophyCard } from "@/components/trophies/trophy-card"
 import { PeriodSelector } from "@/components/trophies/period-selector"
+import { TrophyDetail } from "@/components/trophies/trophy-detail"
 import { AppLayout } from "@/components/layout/app-layout"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -15,6 +16,7 @@ export default async function TrophiesPage(props: TrophiesPageProps) {
     const searchParams = await props.searchParams
     const rolling = searchParams.rolling ? parseInt(searchParams.rolling as string) : 1
     const period = searchParams.period as string | undefined
+    const showSymbol = searchParams.show as string | undefined
 
     // Fetch data
     const trophiesData = await getTrophiesData(rolling, period)
@@ -63,6 +65,7 @@ export default async function TrophiesPage(props: TrophiesPageProps) {
                             gold={data.gold}
                             silver={data.silver}
                             bronze={data.bronze}
+                            searchParams={searchParams}
                         />
                     ))}
                     {trophiesData.length === 0 && (
@@ -71,6 +74,14 @@ export default async function TrophiesPage(props: TrophiesPageProps) {
                         </div>
                     )}
                 </div>
+
+                {showSymbol && (
+                    <TrophyDetail
+                        symbol={showSymbol}
+                        rolling={rolling}
+                        period={period}
+                    />
+                )}
             </div>
         </AppLayout>
     )

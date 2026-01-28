@@ -1,16 +1,25 @@
 import { Trophy, Medal } from "lucide-react"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 interface TrophyCardProps {
     symbol: string
     gold: number
     silver: number
     bronze: number
+    searchParams?: any
 }
 
-export function TrophyCard({ symbol, gold, silver, bronze }: TrophyCardProps) {
+export function TrophyCard({ symbol, gold, silver, bronze, searchParams }: TrophyCardProps) {
+    const params = new URLSearchParams(searchParams)
+    params.set("show", symbol)
+
     return (
-        <div className="group relative overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md">
+        <Link
+            href={`?${params.toString()}`}
+            scroll={false}
+            className="group relative overflow-hidden rounded-xl border border-border/50 bg-muted/20 text-foreground shadow-sm transition-all duration-300 hover:shadow-xl hover:bg-muted/30 cursor-pointer hover:-translate-y-1 block"
+        >
             <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-3xl font-light tracking-tight">{symbol}</h3>
@@ -28,7 +37,7 @@ export function TrophyCard({ symbol, gold, silver, bronze }: TrophyCardProps) {
                     </div>
 
                     {/* Silver - Position 2 */}
-                    <div className="flex flex-col items-center justify-center space-y-2 p-3 rounded-lg bg-slate-200/50 dark:bg-slate-800/50 group-hover:bg-slate-200/80 dark:group-hover:bg-slate-800/80 transition-colors">
+                    <div className="flex flex-col items-center justify-center space-y-2 p-3 rounded-lg bg-slate-200/50 dark:bg-slate-800/30 group-hover:bg-slate-200/80 dark:group-hover:bg-slate-800/50 transition-colors">
                         <div className="p-2 rounded-full bg-slate-100 dark:bg-slate-700/50">
                             <Medal className="h-6 w-6 text-slate-600 dark:text-slate-400" />
                         </div>
@@ -54,6 +63,6 @@ export function TrophyCard({ symbol, gold, silver, bronze }: TrophyCardProps) {
 
             {/* Gradient Accent */}
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-        </div>
+        </Link>
     )
 }
