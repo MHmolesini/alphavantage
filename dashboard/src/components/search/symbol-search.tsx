@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { getSymbols } from "@/app/actions/financials"
 import { Combobox } from "@/components/ui/combobox"
 import { cn } from "@/lib/utils"
@@ -13,6 +13,7 @@ interface SymbolSearchProps {
 
 export function SymbolSearch({ className, variant = "default" }: SymbolSearchProps) {
     const router = useRouter()
+    const pathname = usePathname()
     const [symbols, setSymbols] = useState<{ value: string; label: string }[]>([])
 
     useEffect(() => {
@@ -26,7 +27,17 @@ export function SymbolSearch({ className, variant = "default" }: SymbolSearchPro
 
     const handleSelect = (value: string) => {
         if (value) {
-            router.push(`/analysis/${value}`)
+            // Determine current section
+            if (pathname.startsWith("/financials")) {
+                router.push(`/financials/${value}`)
+            } else if (pathname.startsWith("/analysis")) {
+                router.push(`/analysis/${value}`)
+            } else if (pathname.startsWith("/market")) {
+                router.push(`/market/${value}`)
+            } else {
+                // Default fallback
+                router.push(`/analysis/${value}`)
+            }
         }
     }
 
