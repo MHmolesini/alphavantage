@@ -39,7 +39,7 @@
 
 :root {
   /* Minimalist Elegant Light Mode */
-  --background: hsl(210 20% 98%);
+  --background: hsl(210, 20%, 98%);
   /* Subtle cool gray/off-white */
   --foreground: hsl(224 71.4% 4.1%);
 

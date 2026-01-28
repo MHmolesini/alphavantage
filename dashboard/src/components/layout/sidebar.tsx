@@ -1,6 +1,6 @@
 "use client"
 
-import { LayoutDashboard, FileText, PieChart, Settings, Calculator, TrendingUp, ArrowUpRight, Trophy, Medal } from "lucide-react"
+import { LayoutDashboard, FileText, PieChart, Settings, Calculator, TrendingUp, ArrowUpRight, Trophy, Medal, Award } from "lucide-react"
 import Link from "next/link"
 import { useParams, usePathname } from "next/navigation"
 
@@ -99,6 +99,16 @@ export function Sidebar({ className, currentSymbol }: { className?: string, curr
                             <Link href={symbol ? `/positions/${symbol}/rankings` : '#'}>
                                 <Medal className="mr-2 h-4 w-4" />
                                 Rankings
+                            </Link>
+                        </Button>
+                        <Button
+                            asChild
+                            variant={pathname.includes("/positions/trophies") ? "secondary" : "ghost"}
+                            className="w-full justify-start pl-6"
+                        >
+                            <Link href="/positions/trophies">
+                                <Award className="mr-2 h-4 w-4 text-orange-500/70" />
+                                Trophies
                             </Link>
                         </Button>
                     </div>
