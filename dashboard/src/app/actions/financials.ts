@@ -353,3 +353,83 @@ export async function getGlobalRankings(rollingPeriod: number = 1) {
     return [];
   }
 }
+
+export async function getDashboardMetrics(symbol: string, base: string) {
+  console.log(`[getDashboardMetrics] Fetching GLOBAL context for ${symbol} - ${base}`);
+
+  // 1. Get the latest period for this symbol and base
+  // We can't assume all symbols have data for the same latest period, so we check the target symbol.
+  const periodQuery = `
+    SELECT MAX(period_quarter) as latest_period
+    FROM \`development.base\`
+    WHERE symbol = @symbol
+      AND base = @base
+      AND ranking IS NOT NULL
+  `
+
+  try {
+    const [periodRows] = await bigquery.query({
+      query: periodQuery,
+      params: { symbol, base }
+    });
+
+    const latestPeriod = periodRows[0]?.latest_period;
+
+    if (!latestPeriod) {
+      console.log(`[getDashboardMetrics] No data found for ${symbol} in ${base}`);
+      return [];
+    }
+
+    // 2. Fetch data for ALL symbols for that period
+    const query = `
+      WITH DataForPeriod AS (
+        SELECT 
+          symbol, 
+          base, 
+          period_quarter, 
+          REGEXP_REPLACE(concept, r'(_var_\\d+|_acum|_ttm|_var_acum_\\d+)$', '') as concept,
+          ranking,
+          value
+        FROM \`development.base\`
+        WHERE base = @base
+          AND period_quarter = @latestPeriod
+          AND ranking IS NOT NULL
+          AND ranking > 0
+      ),
+      input_data AS (
+          SELECT
+             symbol,
+             base,
+             period_quarter,
+             concept,
+             SUM(ranking) as ranking, -- Sum if multiple entries (e.g. suffixes)
+             AVG(value) as value -- Avg value? Or Max? Usually value is same.
+          FROM DataForPeriod
+          GROUP BY 1, 2, 3, 4
+      ),
+      RankedData AS (
+        SELECT 
+          *,
+          RANK() OVER (PARTITION BY concept ORDER BY ranking DESC) as position_rank
+        FROM input_data
+      )
+      SELECT 
+        symbol, base, period_quarter, concept, value, ranking, position_rank
+      FROM RankedData
+      -- Removed WHERE symbol = @symbol to get ALL symbols
+      ORDER BY concept ASC, position_rank ASC
+      LIMIT 10000 
+    `
+    // Increased limit to accommodate all symbols * concepts
+
+    const [rows] = await bigquery.query({
+      query,
+      params: { symbol, base, latestPeriod },
+    });
+    return rows;
+
+  } catch (error) {
+    console.error("BigQuery Error:", error);
+    return [];
+  }
+}

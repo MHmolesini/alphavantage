@@ -7,10 +7,13 @@ import { useParams, usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
-export function Sidebar({ className }: { className?: string }) {
+export function Sidebar({ className, currentSymbol }: { className?: string, currentSymbol?: string }) {
     const pathname = usePathname()
     const params = useParams()
-    const symbol = params.symbol as string | undefined
+    const urlSymbol = params.symbol as string | undefined
+
+    // Use URL symbol if available, otherwise fallback to prop (dashboard state)
+    const symbol = urlSymbol || currentSymbol
 
     return (
         <div className={cn("pb-12 min-h-screen border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60", className)}>

@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils"
 interface SymbolSearchProps {
     className?: string
     variant?: "default" | "header"
+    onSelect?: (symbol: string) => void
 }
 
-export function SymbolSearch({ className, variant = "default" }: SymbolSearchProps) {
+export function SymbolSearch({ className, variant = "default", onSelect }: SymbolSearchProps) {
     const router = useRouter()
     const pathname = usePathname()
     const [symbols, setSymbols] = useState<{ value: string; label: string }[]>([])
@@ -27,6 +28,11 @@ export function SymbolSearch({ className, variant = "default" }: SymbolSearchPro
 
     const handleSelect = (value: string) => {
         if (value) {
+            if (onSelect) {
+                onSelect(value)
+                return
+            }
+
             // Determine current section
             if (pathname.startsWith("/financials")) {
                 router.push(`/financials/${value}`)
