@@ -66,6 +66,64 @@ export function FinancialsDashboard({ symbol, income, balance, cashFlow }: Finan
         { concept: "ebit" }
     ]
 
+    const BALANCE_STRUCTURE = [
+        {
+            concept: "totalAssets",
+            children: [
+                {
+                    concept: "totalCurrentAssets",
+                    children: [
+                        { concept: "cashAndShortTermInvestments" },
+                        { concept: "currentNetReceivables" },
+                        { concept: "inventory" },
+                        { concept: "otherCurrentAssets" }
+                    ]
+                },
+                {
+                    concept: "totalNonCurrentAssets",
+                    children: [
+                        { concept: "longTermInvestments" },
+                        { concept: "propertyPlantEquipment" },
+                        { concept: "accumulatedDepreciationAmortizationPPE" },
+                        { concept: "intangibleAssets" },
+                        { concept: "goodwill" },
+                        { concept: "intangibleAssetsExcludingGoodwill" },
+                        { concept: "deferredRevenue" },
+                        { concept: "otherNonCurrentAssets" }
+                    ]
+                }
+            ]
+        },
+        {
+            concept: "totalLiabilities",
+            children: [
+                {
+                    concept: "totalCurrentLiabilities",
+                    children: [
+                        { concept: "shortTermDebt" },
+                        { concept: "currentAccountsPayable" },
+                        { concept: "otherCurrentLiabilities" }
+                    ]
+                },
+                {
+                    concept: "totalNonCurrentLiabilities",
+                    children: [
+                        { concept: "longTermDebt" },
+                    ]
+                }
+            ]
+        },
+        {
+            concept: "totalShareholderEquity",
+            children: [
+                { concept: "retainedEarnings" },
+                { concept: "commonStock" },
+                { concept: "commonStockSharesOutstanding" }
+            ]
+        },
+        { concept: "shortLongTermDebtTotal" }
+    ]
+
     const processData = (rawData: any[], structure?: any[]) => {
         if (!rawData || rawData.length === 0) return { chartData: [], tableData: [], periods: [] }
 
@@ -152,7 +210,7 @@ export function FinancialsDashboard({ symbol, income, balance, cashFlow }: Finan
 
     // Memoize processed data for each tab
     const incomeProcessed = useMemo(() => processData(income, INCOME_STRUCTURE), [income, selectedConcepts, variationType])
-    const balanceProcessed = useMemo(() => processData(balance), [balance, selectedConcepts, variationType])
+    const balanceProcessed = useMemo(() => processData(balance, BALANCE_STRUCTURE), [balance, selectedConcepts, variationType])
     const cashProcessed = useMemo(() => processData(cashFlow), [cashFlow, selectedConcepts, variationType])
 
     // Render Controls helper
