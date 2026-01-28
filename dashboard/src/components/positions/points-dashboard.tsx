@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { PointsChart } from "@/components/positions/points-chart"
 import { PointsTable } from "@/components/positions/points-table"
 import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface PointsDashboardProps {
     symbol: string
@@ -16,10 +17,13 @@ interface PointsDashboardProps {
 
 export function PointsDashboard({ symbol, pointsData, currentRolling }: PointsDashboardProps) {
     const [selectedConcepts, setSelectedConcepts] = useState<string[]>([])
+    const [isPending, startTransition] = useTransition()
     const router = useRouter()
 
     const handleRollingChange = (val: number) => {
-        router.push(`?rolling=${val}`)
+        startTransition(() => {
+            router.push(`?rolling=${val}`)
+        })
     }
 
     const handleToggleConcept = (concept: string) => {
@@ -191,6 +195,68 @@ export function PointsDashboard({ symbol, pointsData, currentRolling }: PointsDa
     const managementProcessed = useMemo(() => processData('management', MANAGEMENT_STRUCTURE), [pointsData, selectedConcepts])
     const assessmentProcessed = useMemo(() => processData('assessment', ASSESSMENT_STRUCTURE), [pointsData, selectedConcepts])
 
+    const LoadingSkeleton = () => (
+        <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Chart Skeleton */}
+            <div className="w-full h-[400px] border border-border/50 rounded-xl bg-muted/10 p-4 space-y-4">
+                <div className="flex justify-between items-center">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-16" />
+                </div>
+                <div className="flex items-end justify-between h-[300px] gap-2 pb-2">
+                    {[...Array(12)].map((_, i) => (
+                        <Skeleton key={i} className="w-full h-full" style={{ height: `${Math.random() * 60 + 20}%` }} />
+                    ))}
+                </div>
+                <div className="flex justify-between">
+                    {[...Array(6)].map((_, i) => (
+                        <Skeleton key={i} className="h-3 w-8" />
+                    ))}
+                </div>
+            </div>
+
+            {/* Table Skeleton */}
+            <div className="w-full border border-border/50 rounded-xl overflow-hidden bg-muted/10">
+                <div className="border-b border-border/50 bg-muted/50 p-3 flex gap-4">
+                    <Skeleton className="h-4 w-24" />
+                    <div className="flex-1 flex justify-end gap-8">
+                        {[...Array(5)].map((_, i) => (
+                            <Skeleton key={i} className="h-4 w-16" />
+                        ))}
+                    </div>
+                </div>
+                <div className="p-0">
+                    {[...Array(10)].map((_, i) => (
+                        <div key={i} className="flex items-center border-b border-border/40 p-3 gap-4">
+                            <div className="flex items-center gap-3 w-32">
+                                <Skeleton className="h-8 w-8 rounded-full" />
+                                <Skeleton className="h-4 w-12" />
+                            </div>
+                            <div className="flex-1 flex justify-end gap-8">
+                                {[...Array(5)].map((_, j) => (
+                                    <div key={j} className="flex flex-col items-end gap-1">
+                                        <Skeleton className="h-4 w-12" />
+                                        <Skeleton className="h-3 w-8 bg-muted/60" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+
+    const renderTabContent = (data: any) => {
+        if (isPending) return <LoadingSkeleton />
+        return (
+            <div className="space-y-8 animate-in fade-in duration-500">
+                <PointsChart data={data.chartData} selectedConcepts={selectedConcepts} />
+                <PointsTable data={data.tableData} periods={data.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
+            </div>
+        )
+    }
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex items-center justify-between">
@@ -226,44 +292,36 @@ export function PointsDashboard({ symbol, pointsData, currentRolling }: PointsDa
                     <TabsTrigger value="assessment" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Assessment</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="income" className="space-y-8 mt-6">
-                    <PointsChart data={incomeProcessed.chartData} selectedConcepts={selectedConcepts} />
-                    <PointsTable data={incomeProcessed.tableData} periods={incomeProcessed.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
+                <TabsContent value="income" className="mt-6">
+                    {renderTabContent(incomeProcessed)}
                 </TabsContent>
 
-                <TabsContent value="balance" className="space-y-8 mt-6">
-                    <PointsChart data={balanceProcessed.chartData} selectedConcepts={selectedConcepts} />
-                    <PointsTable data={balanceProcessed.tableData} periods={balanceProcessed.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
+                <TabsContent value="balance" className="mt-6">
+                    {renderTabContent(balanceProcessed)}
                 </TabsContent>
 
-                <TabsContent value="cash" className="space-y-8 mt-6">
-                    <PointsChart data={cashProcessed.chartData} selectedConcepts={selectedConcepts} />
-                    <PointsTable data={cashProcessed.tableData} periods={cashProcessed.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
+                <TabsContent value="cash" className="mt-6">
+                    {renderTabContent(cashProcessed)}
                 </TabsContent>
 
-                <TabsContent value="profitability" className="space-y-8 mt-6">
-                    <PointsChart data={profitabilityProcessed.chartData} selectedConcepts={selectedConcepts} />
-                    <PointsTable data={profitabilityProcessed.tableData} periods={profitabilityProcessed.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
+                <TabsContent value="profitability" className="mt-6">
+                    {renderTabContent(profitabilityProcessed)}
                 </TabsContent>
 
-                <TabsContent value="liquidity" className="space-y-8 mt-6">
-                    <PointsChart data={liquidityProcessed.chartData} selectedConcepts={selectedConcepts} />
-                    <PointsTable data={liquidityProcessed.tableData} periods={liquidityProcessed.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
+                <TabsContent value="liquidity" className="mt-6">
+                    {renderTabContent(liquidityProcessed)}
                 </TabsContent>
 
-                <TabsContent value="indebtedness" className="space-y-8 mt-6">
-                    <PointsChart data={indebtednessProcessed.chartData} selectedConcepts={selectedConcepts} />
-                    <PointsTable data={indebtednessProcessed.tableData} periods={indebtednessProcessed.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
+                <TabsContent value="indebtedness" className="mt-6">
+                    {renderTabContent(indebtednessProcessed)}
                 </TabsContent>
 
-                <TabsContent value="management" className="space-y-8 mt-6">
-                    <PointsChart data={managementProcessed.chartData} selectedConcepts={selectedConcepts} />
-                    <PointsTable data={managementProcessed.tableData} periods={managementProcessed.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
+                <TabsContent value="management" className="mt-6">
+                    {renderTabContent(managementProcessed)}
                 </TabsContent>
 
-                <TabsContent value="assessment" className="space-y-8 mt-6">
-                    <PointsChart data={assessmentProcessed.chartData} selectedConcepts={selectedConcepts} />
-                    <PointsTable data={assessmentProcessed.tableData} periods={assessmentProcessed.periods} selectedConcepts={selectedConcepts} onToggleConcept={handleToggleConcept} />
+                <TabsContent value="assessment" className="mt-6">
+                    {renderTabContent(assessmentProcessed)}
                 </TabsContent>
             </Tabs>
         </div>

@@ -8,6 +8,7 @@ import { PointsChart } from "@/components/positions/points-chart"
 import { RankingsTable } from "@/components/rankings/rankings-table"
 import { cn } from "@/lib/utils"
 import { getConceptRankings, getCategoryRankings } from "@/app/actions/financials"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Loader2 } from "lucide-react"
 
 interface RankingsDashboardProps {
@@ -284,36 +285,87 @@ export function RankingsDashboard({ symbol, currentRolling }: RankingsDashboardP
 
                     {/* Right Content */}
                     <div className="flex-1 space-y-6 min-w-0 relative">
-                        {isLoading && (
-                            <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
-                                <div className="bg-background/80 p-3 rounded-full shadow-lg border">
-                                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        {isLoading ? (
+                            <div className="space-y-6 animate-in fade-in duration-300">
+                                {/* Chart Skeleton */}
+                                <div className="w-full h-[400px] border border-border/50 rounded-xl bg-muted/10 p-4 space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <Skeleton className="h-4 w-24" />
+                                        <Skeleton className="h-4 w-16" />
+                                    </div>
+                                    <div className="flex items-end justify-between h-[300px] gap-2 pb-2">
+                                        {[...Array(12)].map((_, i) => (
+                                            <Skeleton key={i} className="w-full h-full" style={{ height: `${Math.random() * 60 + 20}%` }} />
+                                        ))}
+                                    </div>
+                                    <div className="flex justify-between">
+                                        {[...Array(6)].map((_, i) => (
+                                            <Skeleton key={i} className="h-3 w-8" />
+                                        ))}
+                                    </div>
                                 </div>
+
+                                {/* Header Skeleton */}
+                                <div className="flex items-center justify-between px-1 mb-2">
+                                    <Skeleton className="h-6 w-48 rounded-full" />
+                                    <Skeleton className="h-6 w-32 rounded-full" />
+                                </div>
+
+                                {/* Table Skeleton */}
+                                <div className="w-full border border-border/50 rounded-xl overflow-hidden bg-muted/10">
+                                    <div className="border-b border-border/50 bg-muted/50 p-3 flex gap-4">
+                                        <Skeleton className="h-4 w-24" />
+                                        <div className="flex-1 flex justify-end gap-8">
+                                            {[...Array(5)].map((_, i) => (
+                                                <Skeleton key={i} className="h-4 w-16" />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="p-0">
+                                        {[...Array(10)].map((_, i) => (
+                                            <div key={i} className="flex items-center border-b border-border/40 p-3 gap-4">
+                                                <div className="flex items-center gap-3 w-32">
+                                                    <Skeleton className="h-8 w-8 rounded-full" />
+                                                    <Skeleton className="h-4 w-12" />
+                                                </div>
+                                                <div className="flex-1 flex justify-end gap-8">
+                                                    {[...Array(5)].map((_, j) => (
+                                                        <div key={j} className="flex flex-col items-end gap-1">
+                                                            <Skeleton className="h-4 w-12" />
+                                                            <Skeleton className="h-3 w-8 bg-muted/60" />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-6 animate-in fade-in duration-500">
+                                <PointsChart data={chartData} selectedConcepts={chartTickers} />
+                                <div className="flex items-center justify-between px-1 mb-2">
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <span>Comparison:</span>
+                                        <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium border border-primary/20 shadow-sm">
+                                            {selectedConcept || `Total ${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}`}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <span className="px-2.5 py-0.5 rounded-full bg-muted-foreground/10 text-foreground font-medium border border-border/50 shadow-sm">
+                                            {tableData.length}
+                                        </span>
+                                        <span>Companies</span>
+                                    </div>
+                                </div>
+                                <RankingsTable
+                                    data={tableData}
+                                    periods={periods}
+                                    selectedConcepts={chartTickers}
+                                    onToggleConcept={handleToggleTicker}
+                                />
                             </div>
                         )}
-                        <div className={cn("space-y-6 transition-opacity duration-200", isLoading ? "opacity-50 pointer-events-none" : "opacity-100")}>
-                            <PointsChart data={chartData} selectedConcepts={chartTickers} />
-                            <div className="flex items-center justify-between px-1 mb-2">
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <span>Comparison:</span>
-                                    <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium border border-primary/20 shadow-sm">
-                                        {selectedConcept || `Total ${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}`}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <span className="px-2.5 py-0.5 rounded-full bg-muted-foreground/10 text-foreground font-medium border border-border/50 shadow-sm">
-                                        {tableData.length}
-                                    </span>
-                                    <span>Companies</span>
-                                </div>
-                            </div>
-                            <RankingsTable
-                                data={tableData}
-                                periods={periods}
-                                selectedConcepts={chartTickers}
-                                onToggleConcept={handleToggleTicker}
-                            />
-                        </div>
                     </div>
                 </div>
             </Tabs>

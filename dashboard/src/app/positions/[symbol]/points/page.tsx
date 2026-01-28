@@ -18,6 +18,9 @@ export default async function PointsPage(props: PointsPageProps) {
     // Parse rolling period from query string, default to 1
     const rolling = searchParams.rolling ? parseInt(searchParams.rolling as string) : 1
 
+    // Artificial delay to prevent flicker (min 1s)
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
     // Fetch ranking data
     const pointsData = await getSymbolPoints(symbol, rolling)
 
