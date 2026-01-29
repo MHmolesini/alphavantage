@@ -41,22 +41,29 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
     // 2. Determine target periods
     let targetPeriods: string[] = []
 
-    // Determine anchor period (latest selected or absolute latest)
-    // If multiple periods are passed (e.g. compare), take the first one (usually latest in desc) 
-    // or handle specific logic. For rolling, we assume 'period' is the end of the window.
-    const anchorPeriod = period ? period.split(",")[0] : allPeriods[0]
+    // Parse all selected periods (Multi-Select support)
+    const selectedPeriods = period ? period.split(",") : [allPeriods[0]]
+    const latestSelected = selectedPeriods[0] // Assuming sorted desc in UI, or we can sort them
 
-    const anchorIndex = allPeriods.indexOf(anchorPeriod)
-
-    if (anchorIndex !== -1) {
-        // Calculate the slice: from anchor index, take N periods
-        targetPeriods = allPeriods.slice(anchorIndex, anchorIndex + safeRolling)
+    if (safeRolling > 1) {
+        // Rolling Mode: Score is based on the window ending at the LATEST selected period
+        // Medals will be based on the selected periods (summed)
+        const anchorIndex = allPeriods.indexOf(latestSelected)
+        if (anchorIndex !== -1) {
+            targetPeriods = allPeriods.slice(anchorIndex, anchorIndex + safeRolling)
+        } else {
+            targetPeriods = [latestSelected]
+        }
     } else {
-        // Fallback if period not found in list
-        targetPeriods = [anchorPeriod]
+        // Standard Mode (Ranking 1): Score AND Medals are based on the explicitly selected set
+        targetPeriods = selectedPeriods
     }
 
-    console.log(`[getTrophiesData] Rolling: ${safeRolling}, Anchor: ${anchorPeriod}, Targets: ${targetPeriods.join(', ')}`)
+    // Ensure we don't pass empty arrays if something goes wrong
+    if (targetPeriods.length === 0) targetPeriods = [allPeriods[0]]
+    if (selectedPeriods.length === 0) selectedPeriods.push(allPeriods[0])
+
+    console.log(`[getTrophiesData] Rolling: ${safeRolling}, Selected: ${selectedPeriods.join(', ')}, ScoreTargets: ${targetPeriods.join(', ')}`)
 
     const query = `
     WITH CleanData AS (
@@ -71,7 +78,7 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
       WHERE ranking IS NOT NULL
         AND ranking > 0
     ),
-    -- Data for the ANCHOR period (for Medals)
+    -- Data for the SELECTED period(s) (for Medals)
     AnchorAggregated AS (
       SELECT 
         symbol, 
@@ -80,7 +87,7 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
         normalized_concept as concept, 
         SUM(ranking) as total_ranking
       FROM CleanData
-      WHERE period_quarter = @anchorPeriod
+      WHERE period_quarter IN UNNEST(@selectedPeriods)
       GROUP BY 1, 2, 3, 4
     ),
     -- Data for the ROLLING window (for Score)
@@ -91,7 +98,7 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
       FROM CleanData
       WHERE period_quarter IN UNNEST(@targetPeriods)
     ),
-    -- Rank calculation for ANCHOR period
+    -- Rank calculation for EACH selected period
     RankedData AS (
       SELECT 
         symbol, 
@@ -102,7 +109,7 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
         RANK() OVER (PARTITION BY base, concept, period_quarter ORDER BY total_ranking DESC) as position_rank
       FROM AnchorAggregated
     ),
-    -- Total score calculation for ROLLING window
+    -- Total score calculation for ROLLING window (or selected set if rolling=1)
     SymbolScores AS (
       SELECT 
         symbol, 
@@ -112,11 +119,11 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
     )
     SELECT 
       r.symbol,
-      -- Medals strictly from the anchor period
+      -- Medals: Sum of positions 1, 2, 3 across ALL selected periods
       COUNTIF(r.position_rank = 1) as gold,
       COUNTIF(r.position_rank = 2) as silver,
       COUNTIF(r.position_rank = 3) as bronze,
-      -- Score from the rolling window
+      -- Score: From the calculated window
       ANY_VALUE(s.total_score) as total_score
     FROM RankedData r
     JOIN SymbolScores s ON r.symbol = s.symbol
@@ -128,7 +135,7 @@ export async function getTrophiesData(rollingPeriod: number = 1, period?: string
     try {
         const [rows] = await bigquery.query({
             query,
-            params: { targetPeriods, anchorPeriod },
+            params: { targetPeriods, selectedPeriods },
         });
         return rows as TrophyData[];
     } catch (error) {
