@@ -11,7 +11,17 @@ let options: any = {
     location: "US", // Explicitly setting location to defaults to avoid 'Cannot parse as CloudRegion' if inference fails
 }
 
-if (fs.existsSync(credentialsPath)) {
+// Prioritize Environment Variables (Vercel / Production)
+if (process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_PROJECT_ID) {
+    options.credentials = {
+        client_email: process.env.GOOGLE_CLIENT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'), // Handle escaped newlines
+        project_id: process.env.GOOGLE_PROJECT_ID,
+    }
+    options.projectId = process.env.GOOGLE_PROJECT_ID
+}
+// Fallback to local file (Development)
+else if (fs.existsSync(credentialsPath)) {
     try {
         const keyFileContent = fs.readFileSync(credentialsPath, "utf-8")
         const credentials = JSON.parse(keyFileContent)
@@ -20,7 +30,7 @@ if (fs.existsSync(credentialsPath)) {
         console.error("Error reading BigQuery credentials:", e)
     }
 } else {
-    console.warn("BigQuery credentials file not found at:", credentialsPath)
+    console.warn("BigQuery credentials not found. Set GOOGLE_CLIENT_EMAIL/PRIVATE_KEY/PROJECT_ID env vars or provide account_service.json")
 }
 
 const bigquery = new BigQuery(options)

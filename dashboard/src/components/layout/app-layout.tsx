@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 
@@ -7,7 +8,9 @@ export function AppLayout({ children, symbol }: { children: React.ReactNode, sym
     return (
         <div className="flex h-screen overflow-hidden bg-background">
             <div className="hidden md:block w-64 border-r">
-                <Sidebar className="h-full" currentSymbol={symbol} />
+                <Suspense fallback={<div className="w-64 h-full bg-muted/10" />}>
+                    <Sidebar className="h-full" currentSymbol={symbol} />
+                </Suspense>
             </div>
             <div className="flex-1 flex flex-col overflow-hidden">
                 <Header />
