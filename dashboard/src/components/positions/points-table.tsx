@@ -73,34 +73,78 @@ export function PointsTable({ data, periods, selectedConcepts, onToggleConcept }
                                 </span>
                             </div>
                         </TableCell>
-                        {periods.map(period => {
+                        {periods.map((period, index) => {
                             const cellData = row[period]
                             const ranking = cellData?.ranking
                             const position = cellData?.position_rank
 
+                            // Calculate Variation vs Previous Quarter (which is the NEXT item in the array)
+                            let variationEl = null
+                            if (position && index < periods.length - 1) {
+                                const prevPeriod = periods[index + 1]
+                                const prevData = row[prevPeriod]
+                                const prevPosition = prevData?.position_rank
+
+                                if (prevPosition) {
+                                    const diff = prevPosition - position // e.g. Prev 5, Curr 3 => 2 (Improved)
+
+                                    if (diff > 0) {
+                                        variationEl = (
+                                            <div className="flex items-center gap-0.5 text-green-500/90" title={`Improved by ${diff} positions`}>
+                                                <div className="bg-green-500/10 p-0.5 rounded-full"><ChevronDown className="h-2.5 w-2.5 rotate-180" strokeWidth={3} /></div>
+                                                <span className="text-[10px] font-bold">{diff}</span>
+                                            </div>
+                                        )
+                                    } else if (diff < 0) {
+                                        variationEl = (
+                                            <div className="flex items-center gap-0.5 text-red-500/90" title={`Dropped by ${Math.abs(diff)} positions`}>
+                                                <div className="bg-red-500/10 p-0.5 rounded-full"><ChevronDown className="h-2.5 w-2.5" strokeWidth={3} /></div>
+                                                <span className="text-[10px] font-bold">{Math.abs(diff)}</span>
+                                            </div>
+                                        )
+                                    } else {
+                                        variationEl = (
+                                            <div className="flex items-center justify-center text-muted-foreground/30" title="No change">
+                                                <div className="w-1 h-1 rounded-full bg-current" />
+                                            </div>
+                                        )
+                                    }
+                                }
+                            }
+
                             return (
                                 <TableCell key={period} className="text-right py-2 align-top">
-                                    <div className="flex flex-col items-end gap-0.5">
+                                    <div className="flex flex-col items-end gap-1">
                                         <span className="font-mono text-xs text-foreground font-medium transition-colors">
                                             {ranking !== null && ranking !== undefined
                                                 ? new Intl.NumberFormat('en-US').format(ranking)
                                                 : '-'}
                                         </span>
                                         {position !== null && position !== undefined && (
-                                            <div className="flex items-center gap-1">
-                                                {position === 1 && <Trophy className="h-3 w-3 text-yellow-500" />}
-                                                {position === 2 && <Trophy className="h-3 w-3 text-slate-400" />}
-                                                {position === 3 && <Trophy className="h-3 w-3 text-amber-600" />}
+                                            <div className="flex items-center gap-1.5 justify-end w-full">
+                                                {/* Variation Indicator (Now on Left) */}
+                                                {variationEl && (
+                                                    <div className="w-8 flex justify-end">
+                                                        {variationEl}
+                                                    </div>
+                                                )}
 
-                                                <span className={cn(
-                                                    "text-[10px] font-bold tracking-tight px-1.5 py-0.5 rounded-full border",
-                                                    position === 1 ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
-                                                        position === 2 ? "bg-slate-400/10 text-slate-400 border-slate-400/20" :
-                                                            position === 3 ? "bg-amber-600/10 text-amber-600 border-amber-600/20" :
-                                                                "bg-muted/50 text-muted-foreground border-border/50"
-                                                )}>
-                                                    #{position}
-                                                </span>
+                                                {/* Rank Badge (Now on Right) */}
+                                                <div className="flex items-center gap-1">
+                                                    {position === 1 && <Trophy className="h-3 w-3 text-yellow-500" />}
+                                                    {position === 2 && <Trophy className="h-3 w-3 text-slate-400" />}
+                                                    {position === 3 && <Trophy className="h-3 w-3 text-amber-600" />}
+
+                                                    <span className={cn(
+                                                        "text-[10px] font-bold tracking-tight px-1.5 py-0.5 rounded-full border",
+                                                        position === 1 ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
+                                                            position === 2 ? "bg-slate-400/10 text-slate-400 border-slate-400/20" :
+                                                                position === 3 ? "bg-amber-600/10 text-amber-600 border-amber-600/20" :
+                                                                    "bg-muted/50 text-muted-foreground border-border/50"
+                                                    )}>
+                                                        #{position}
+                                                    </span>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
