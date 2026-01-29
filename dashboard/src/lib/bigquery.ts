@@ -12,13 +12,14 @@ let options: any = {
 }
 
 // Prioritize Environment Variables (Vercel / Production)
-if (process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_PROJECT_ID) {
+const projectId = process.env.GOOGLE_PROJECT_ID || process.env.GCP_PROJECT_ID;
+if (process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && projectId) {
     options.credentials = {
         client_email: process.env.GOOGLE_CLIENT_EMAIL,
         private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'), // Handle escaped newlines
-        project_id: process.env.GOOGLE_PROJECT_ID,
+        project_id: projectId,
     }
-    options.projectId = process.env.GOOGLE_PROJECT_ID
+    options.projectId = projectId
 }
 // Fallback to local file (Development)
 else if (fs.existsSync(credentialsPath)) {

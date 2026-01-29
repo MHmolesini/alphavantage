@@ -67,6 +67,12 @@ export async function getCompanyMetrics(symbol: string) {
 }
 
 export async function getSymbols() {
+  console.log("[getSymbols] env check", {
+    hasEmail: !!process.env.GOOGLE_CLIENT_EMAIL,
+    hasKey: !!process.env.GOOGLE_PRIVATE_KEY,
+    hasProject: !!process.env.GOOGLE_PROJECT_ID || !!process.env.GCP_PROJECT_ID,
+  });
+
   const query = `
     SELECT DISTINCT symbol
     FROM \`development.base\`
@@ -74,6 +80,7 @@ export async function getSymbols() {
   `
   try {
     const [rows] = await bigquery.query({ query })
+    console.log("[getSymbols] rows:", rows?.length);
     return rows.map((row: any) => row.symbol as string)
   } catch (error) {
     console.error("BigQuery Error fetching symbols:", error)
