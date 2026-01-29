@@ -14,9 +14,14 @@ let options: any = {
 // Prioritize Environment Variables (Vercel / Production)
 const projectId = process.env.GOOGLE_PROJECT_ID || process.env.GCP_PROJECT_ID;
 if (process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && projectId) {
+    console.log("Initializing BigQuery with ENV VARS");
+    console.log("Project ID:", projectId);
+    console.log("Client Email:", `...${process.env.GOOGLE_CLIENT_EMAIL.slice(-25)}`); // Log last part to check for spaces/typos
+    console.log("Private Key Length:", process.env.GOOGLE_PRIVATE_KEY.length);
+
     options.credentials = {
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'), // Handle escaped newlines
+        client_email: process.env.GOOGLE_CLIENT_EMAIL.trim(), // Added trim() just in case
+        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
         project_id: projectId,
     }
     options.projectId = projectId
