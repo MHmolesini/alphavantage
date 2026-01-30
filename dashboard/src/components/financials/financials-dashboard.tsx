@@ -268,7 +268,7 @@ export function FinancialsDashboard({
             </div>
 
             <Tabs defaultValue="income" className="w-full" onValueChange={() => setSelectedConcepts([])}>
-                <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 bg-muted/20 p-1 group/list h-auto">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 bg-muted/20 p-1 group/list h-auto">
                     <TabsTrigger value="income" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Income</TabsTrigger>
                     <TabsTrigger value="balance" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Balance</TabsTrigger>
                     <TabsTrigger value="cash" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Cash Flow</TabsTrigger>

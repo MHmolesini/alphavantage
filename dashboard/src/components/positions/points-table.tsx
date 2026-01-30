@@ -40,33 +40,33 @@ export function PointsTable({ data, periods, selectedConcepts, onToggleConcept }
                         onClick={() => onToggleConcept(row.concept)}
                     >
                         <TableCell className={cn(
-                            "py-2 font-medium sticky left-0 bg-background/95 backdrop-blur z-20 transition-colors group-hover:bg-muted/30",
+                            "py-1 sm:py-2 font-medium sticky left-0 bg-background/95 backdrop-blur z-20 transition-colors group-hover:bg-muted/30",
                             isSelected && "bg-muted/40"
                         )}>
-                            <div className="flex items-center gap-3" style={{ paddingLeft: `${depth * 1.5 + 0.5}rem` }}>
+                            <div className="flex items-center gap-1 sm:gap-3" style={{ paddingLeft: `${depth * 0.5 + 0.25}rem` }}>
                                 {hasChildren ? (
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-5 w-5 p-0 hover:bg-muted"
+                                        className="h-4 w-4 sm:h-5 sm:w-5 p-0 hover:bg-muted"
                                         onClick={(e) => toggleRow(row.concept, e)}
                                     >
                                         {isExpanded ? (
-                                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                            <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                                         ) : (
-                                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                            <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                                         )}
                                     </Button>
                                 ) : (
-                                    <div className="w-5" />
+                                    <div className="w-4 sm:w-5" />
                                 )}
 
                                 <div className={cn(
-                                    "w-1 h-1 rounded-full transition-all duration-300",
+                                    "w-1 h-1 rounded-full transition-all duration-300 flex-shrink-0",
                                     isSelected ? "bg-yellow-500 scale-125" : "bg-muted-foreground/30 group-hover:bg-yellow-500/50"
                                 )} />
                                 <span className={cn(
-                                    "truncate text-sm transition-colors",
+                                    "truncate text-xs sm:text-sm transition-colors",
                                     isSelected ? "text-foreground font-medium" : "text-muted-foreground group-hover:text-foreground"
                                 )}>
                                     {row.concept}
@@ -91,15 +91,15 @@ export function PointsTable({ data, periods, selectedConcepts, onToggleConcept }
                                     if (diff > 0) {
                                         variationEl = (
                                             <div className="flex items-center gap-0.5 text-green-500/90" title={`Improved by ${diff} positions`}>
-                                                <div className="bg-green-500/10 p-0.5 rounded-full"><ChevronDown className="h-2.5 w-2.5 rotate-180" strokeWidth={3} /></div>
-                                                <span className="text-[10px] font-bold">{diff}</span>
+                                                <div className="bg-green-500/10 p-0.5 rounded-full"><ChevronDown className="h-2 w-2 sm:h-2.5 sm:w-2.5 rotate-180" strokeWidth={3} /></div>
+                                                <span className="text-[9px] sm:text-[10px] font-bold">{diff}</span>
                                             </div>
                                         )
                                     } else if (diff < 0) {
                                         variationEl = (
                                             <div className="flex items-center gap-0.5 text-red-500/90" title={`Dropped by ${Math.abs(diff)} positions`}>
-                                                <div className="bg-red-500/10 p-0.5 rounded-full"><ChevronDown className="h-2.5 w-2.5" strokeWidth={3} /></div>
-                                                <span className="text-[10px] font-bold">{Math.abs(diff)}</span>
+                                                <div className="bg-red-500/10 p-0.5 rounded-full"><ChevronDown className="h-2 w-2 sm:h-2.5 sm:w-2.5" strokeWidth={3} /></div>
+                                                <span className="text-[9px] sm:text-[10px] font-bold">{Math.abs(diff)}</span>
                                             </div>
                                         )
                                     } else {
@@ -113,30 +113,30 @@ export function PointsTable({ data, periods, selectedConcepts, onToggleConcept }
                             }
 
                             return (
-                                <TableCell key={period} className="text-right py-2 align-top">
-                                    <div className="flex flex-col items-end gap-1">
-                                        <span className="font-mono text-xs text-foreground font-medium transition-colors">
+                                <TableCell key={period} className="text-right py-1 sm:py-2 align-top">
+                                    <div className="flex flex-col items-end gap-0.5 sm:gap-1">
+                                        <span className="font-mono text-[10px] sm:text-xs text-foreground font-medium transition-colors">
                                             {ranking !== null && ranking !== undefined
                                                 ? new Intl.NumberFormat('en-US').format(ranking)
                                                 : '-'}
                                         </span>
                                         {position !== null && position !== undefined && (
-                                            <div className="flex items-center gap-1.5 justify-end w-full">
-                                                {/* Variation Indicator (Now on Left) */}
+                                            <div className="flex items-center gap-1 justify-end w-full flex-wrap sm:flex-nowrap">
+                                                {/* Variation Indicator */}
                                                 {variationEl && (
-                                                    <div className="w-8 flex justify-end">
+                                                    <div className="w-6 sm:w-8 flex justify-end">
                                                         {variationEl}
                                                     </div>
                                                 )}
 
-                                                {/* Rank Badge (Now on Right) */}
+                                                {/* Rank Badge */}
                                                 <div className="flex items-center gap-1">
-                                                    {position === 1 && <Trophy className="h-3 w-3 text-yellow-500" />}
-                                                    {position === 2 && <Trophy className="h-3 w-3 text-slate-400" />}
-                                                    {position === 3 && <Trophy className="h-3 w-3 text-amber-600" />}
+                                                    {position === 1 && <Trophy className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-yellow-500" />}
+                                                    {position === 2 && <Trophy className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-slate-400" />}
+                                                    {position === 3 && <Trophy className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-600" />}
 
                                                     <span className={cn(
-                                                        "text-[10px] font-bold tracking-tight px-1.5 py-0.5 rounded-full border",
+                                                        "text-[9px] sm:text-[10px] font-bold tracking-tight px-1 py-0.5 rounded-full border",
                                                         position === 1 ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
                                                             position === 2 ? "bg-slate-400/10 text-slate-400 border-slate-400/20" :
                                                                 position === 3 ? "bg-amber-600/10 text-amber-600 border-amber-600/20" :
@@ -168,12 +168,12 @@ export function PointsTable({ data, periods, selectedConcepts, onToggleConcept }
                 <Table>
                     <TableHeader>
                         <TableRow className="hover:bg-transparent border-b border-border/50">
-                            <TableHead className="w-[300px] min-w-[200px] sticky left-0 bg-background/95 backdrop-blur z-20 h-10">
-                                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground pl-8">Concept</span>
+                            <TableHead className="w-[140px] min-w-[140px] sm:w-[300px] sm:min-w-[200px] sticky left-0 bg-background/95 backdrop-blur z-20 h-10">
+                                <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-muted-foreground pl-2 sm:pl-8">Concept</span>
                             </TableHead>
                             {periods.map(period => (
-                                <TableHead key={period} className="text-right min-w-[120px] h-10">
-                                    <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{period}</span>
+                                <TableHead key={period} className="text-right min-w-[80px] sm:min-w-[120px] h-10">
+                                    <span className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{period}</span>
                                 </TableHead>
                             ))}
                         </TableRow>

@@ -70,7 +70,7 @@ export default function Home() {
             </div>
 
             <Tabs defaultValue="profitability" value={selectedBase} onValueChange={setSelectedBase} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 bg-muted/20 p-1 group/list h-auto">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 bg-muted/20 p-1 group/list h-auto">
                 {BASES.map(base => (
                   <TabsTrigger
                     key={base.id}

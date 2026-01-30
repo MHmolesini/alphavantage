@@ -8,6 +8,7 @@ import { PointsChart } from "@/components/positions/points-chart"
 import { PointsTable } from "@/components/positions/points-table"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useMediaQuery } from "@/hooks/use-media-query"
 
 interface PointsDashboardProps {
     symbol: string
@@ -19,6 +20,7 @@ export function PointsDashboard({ symbol, pointsData, currentRolling }: PointsDa
     const [selectedConcepts, setSelectedConcepts] = useState<string[]>([])
     const [isPending, startTransition] = useTransition()
     const router = useRouter()
+    const isMobile = useMediaQuery("(max-width: 768px)")
 
     const handleRollingChange = (val: number) => {
         startTransition(() => {
@@ -149,7 +151,7 @@ export function PointsDashboard({ symbol, pointsData, currentRolling }: PointsDa
                 return b.localeCompare(a)
             })
 
-        const periods = allPeriods.slice(0, 30)
+        const periods = allPeriods.slice(0, isMobile ? 20 : 30)
 
         const getCellData = (concept: string, period: string) => {
             const currentRecord = rawData.find(d => d.concept === concept && d.period_quarter === period)
@@ -186,19 +188,19 @@ export function PointsDashboard({ symbol, pointsData, currentRolling }: PointsDa
         return { chartData, tableData, periods }
     }
 
-    const incomeProcessed = useMemo(() => processData('income_statements', INCOME_STRUCTURE), [pointsData, selectedConcepts])
-    const balanceProcessed = useMemo(() => processData('balance_sheet', BALANCE_STRUCTURE), [pointsData, selectedConcepts])
-    const cashProcessed = useMemo(() => processData('cash_flow', CASH_STRUCTURE), [pointsData, selectedConcepts])
-    const profitabilityProcessed = useMemo(() => processData('profitability', PROFITABILITY_STRUCTURE), [pointsData, selectedConcepts])
-    const liquidityProcessed = useMemo(() => processData('liquidity', LIQUIDITY_STRUCTURE), [pointsData, selectedConcepts])
-    const indebtednessProcessed = useMemo(() => processData('indebtedness', INDEBTEDNESS_STRUCTURE), [pointsData, selectedConcepts])
-    const managementProcessed = useMemo(() => processData('management', MANAGEMENT_STRUCTURE), [pointsData, selectedConcepts])
-    const assessmentProcessed = useMemo(() => processData('assessment', ASSESSMENT_STRUCTURE), [pointsData, selectedConcepts])
+    const incomeProcessed = useMemo(() => processData('income_statements', INCOME_STRUCTURE), [pointsData, selectedConcepts, isMobile])
+    const balanceProcessed = useMemo(() => processData('balance_sheet', BALANCE_STRUCTURE), [pointsData, selectedConcepts, isMobile])
+    const cashProcessed = useMemo(() => processData('cash_flow', CASH_STRUCTURE), [pointsData, selectedConcepts, isMobile])
+    const profitabilityProcessed = useMemo(() => processData('profitability', PROFITABILITY_STRUCTURE), [pointsData, selectedConcepts, isMobile])
+    const liquidityProcessed = useMemo(() => processData('liquidity', LIQUIDITY_STRUCTURE), [pointsData, selectedConcepts, isMobile])
+    const indebtednessProcessed = useMemo(() => processData('indebtedness', INDEBTEDNESS_STRUCTURE), [pointsData, selectedConcepts, isMobile])
+    const managementProcessed = useMemo(() => processData('management', MANAGEMENT_STRUCTURE), [pointsData, selectedConcepts, isMobile])
+    const assessmentProcessed = useMemo(() => processData('assessment', ASSESSMENT_STRUCTURE), [pointsData, selectedConcepts, isMobile])
 
     const LoadingSkeleton = () => (
         <div className="space-y-6 animate-in fade-in duration-300">
             {/* Chart Skeleton */}
-            <div className="w-full h-[400px] border border-border/50 rounded-xl bg-muted/10 p-4 space-y-4">
+            <div className="w-full h-[300px] sm:h-[400px] border border-border/50 rounded-xl bg-muted/10 p-4 space-y-4">
                 <div className="flex justify-between items-center">
                     <Skeleton className="h-4 w-24" />
                     <Skeleton className="h-4 w-16" />
@@ -260,7 +262,7 @@ export function PointsDashboard({ symbol, pointsData, currentRolling }: PointsDa
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-light tracking-tight">{symbol} <span className="text-muted-foreground text-xl">Points & Rankings</span></h1>
+                <h1 className="text-2xl sm:text-3xl font-light tracking-tight">{symbol} <span className="text-muted-foreground text-lg sm:text-xl">Points & Rankings</span></h1>
 
                 <div className="flex bg-muted/20 p-1 rounded-lg">
                     {[1, 4, 8, 12].map((r) => (
@@ -270,18 +272,18 @@ export function PointsDashboard({ symbol, pointsData, currentRolling }: PointsDa
                             size="sm"
                             onClick={() => handleRollingChange(r)}
                             className={cn(
-                                "text-xs font-medium px-3 h-7",
+                                "text-xs font-medium px-2 sm:px-3 h-7",
                                 currentRolling === r ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
                             )}
                         >
-                            Ranking {r}
+                            <span className="hidden sm:inline">Ranking </span>{r}
                         </Button>
                     ))}
                 </div>
             </div>
 
             <Tabs defaultValue="income" className="w-full" onValueChange={() => setSelectedConcepts([])}>
-                <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 bg-muted/20 p-1 group/list h-auto">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 bg-muted/20 p-1 group/list h-auto">
                     <TabsTrigger value="income" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Income</TabsTrigger>
                     <TabsTrigger value="balance" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Balance</TabsTrigger>
                     <TabsTrigger value="cash" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Cash Flow</TabsTrigger>

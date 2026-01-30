@@ -4,6 +4,8 @@ import React, { useMemo } from 'react'
 import ReactECharts from 'echarts-for-react'
 import { useTheme } from 'next-themes'
 
+import { useMediaQuery } from "@/hooks/use-media-query"
+
 interface PointsChartProps {
     data: any[]
     selectedConcepts: string[]
@@ -12,6 +14,7 @@ interface PointsChartProps {
 export function PointsChart({ data, selectedConcepts }: PointsChartProps) {
     const { theme } = useTheme()
     const isDark = theme === 'dark'
+    const isMobile = useMediaQuery("(max-width: 768px)")
 
     // Generate stable color based on string
     const stringToColorIndex = (str: string) => {
@@ -130,11 +133,16 @@ export function PointsChart({ data, selectedConcepts }: PointsChartProps) {
                 show: true,
                 bottom: 0,
                 left: 'center',
-                textStyle: { color: isDark ? '#a1a1aa' : '#71717a' },
-                itemWidth: 12, itemHeight: 12
+                type: isMobile ? 'scroll' : 'plain',
+                textStyle: {
+                    color: isDark ? '#a1a1aa' : '#71717a',
+                    fontSize: isMobile ? 10 : 12
+                },
+                itemWidth: isMobile ? 8 : 12,
+                itemHeight: isMobile ? 8 : 12
             },
             grid: {
-                left: '2%', right: '4%', bottom: '15%', top: '10%', containLabel: true
+                left: '2%', right: '4%', bottom: isMobile ? '20%' : '15%', top: '10%', containLabel: true
             },
             xAxis: {
                 type: 'category',
@@ -180,7 +188,7 @@ export function PointsChart({ data, selectedConcepts }: PointsChartProps) {
             animationEasing: 'elasticOut',
             animationDelayUpdate: (idx: number) => idx * 5
         }
-    }, [data, selectedConcepts, isDark])
+    }, [data, selectedConcepts, isDark, isMobile])
 
     return (
         <div className="w-full h-[400px] p-4 bg-muted/20 border border-border/50 rounded-xl">

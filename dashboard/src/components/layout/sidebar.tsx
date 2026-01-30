@@ -6,7 +6,7 @@ import { useParams, usePathname, useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
-export function Sidebar({ className, currentSymbol }: { className?: string, currentSymbol?: string }) {
+export function Sidebar({ className, currentSymbol, onNavigate }: { className?: string, currentSymbol?: string, onNavigate?: () => void }) {
     const pathname = usePathname()
     const params = useParams()
     const searchParams = useSearchParams()
@@ -29,6 +29,7 @@ export function Sidebar({ className, currentSymbol }: { className?: string, curr
                             asChild
                             variant={pathname === "/" ? "secondary" : "ghost"}
                             className="w-full justify-start"
+                            onClick={onNavigate}
                         >
                             <Link href="/">
                                 <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -39,6 +40,7 @@ export function Sidebar({ className, currentSymbol }: { className?: string, curr
                             asChild
                             variant={pathname.startsWith("/financials") ? "secondary" : "ghost"}
                             className={cn("w-full justify-start", !symbol && "opacity-50 pointer-events-none")}
+                            onClick={onNavigate}
                         >
                             <Link href={symbol ? `/financials/${symbol}` : '#'}>
                                 <FileText className="mr-2 h-4 w-4" />
@@ -49,6 +51,7 @@ export function Sidebar({ className, currentSymbol }: { className?: string, curr
                             asChild
                             variant={pathname.startsWith("/analysis") ? "secondary" : "ghost"}
                             className={cn("w-full justify-start", !symbol && "opacity-50 pointer-events-none")}
+                            onClick={onNavigate}
                         >
                             <Link href={symbol ? `/analysis/${symbol}` : '#'}>
                                 <PieChart className="mr-2 h-4 w-4" />
@@ -59,6 +62,7 @@ export function Sidebar({ className, currentSymbol }: { className?: string, curr
                             asChild
                             variant={pathname.startsWith("/market") ? "secondary" : "ghost"}
                             className={cn("w-full justify-start", !symbol && "opacity-50 pointer-events-none")}
+                            onClick={onNavigate}
                         >
                             <Link href={symbol ? `/market/${symbol}` : '#'}>
                                 <TrendingUp className="mr-2 h-4 w-4" />
@@ -69,6 +73,7 @@ export function Sidebar({ className, currentSymbol }: { className?: string, curr
                             asChild
                             variant={pathname.startsWith("/tools") ? "secondary" : "ghost"}
                             className="w-full justify-start"
+                            onClick={onNavigate}
                         >
                             <Link href="/tools">
                                 <Calculator className="mr-2 h-4 w-4" />
@@ -87,6 +92,7 @@ export function Sidebar({ className, currentSymbol }: { className?: string, curr
                             asChild
                             variant={pathname.includes("/points") ? "secondary" : "ghost"}
                             className={cn("w-full justify-start pl-6", !symbol && "opacity-50 pointer-events-none")}
+                            onClick={onNavigate}
                         >
                             <Link href={symbol ? `/positions/${symbol}/points` : '#'}>
                                 <Trophy className="mr-2 h-4 w-4 text-yellow-500/70" />
@@ -97,6 +103,7 @@ export function Sidebar({ className, currentSymbol }: { className?: string, curr
                             asChild
                             variant={pathname.includes("/rankings") ? "secondary" : "ghost"}
                             className={cn("w-full justify-start pl-6", !symbol && "opacity-50 pointer-events-none")}
+                            onClick={onNavigate}
                         >
                             <Link href={symbol ? `/positions/${symbol}/rankings` : '#'}>
                                 <Medal className="mr-2 h-4 w-4" />
@@ -107,6 +114,7 @@ export function Sidebar({ className, currentSymbol }: { className?: string, curr
                             asChild
                             variant={pathname.includes("/positions/trophies") ? "secondary" : "ghost"}
                             className="w-full justify-start pl-6"
+                            onClick={onNavigate}
                         >
                             <Link href="/positions/trophies">
                                 <Award className="mr-2 h-4 w-4 text-orange-500/70" />
@@ -121,6 +129,7 @@ export function Sidebar({ className, currentSymbol }: { className?: string, curr
                         asChild
                         variant="ghost"
                         className="w-full justify-start"
+                        onClick={onNavigate}
                     >
                         <Link href="/settings">
                             <Settings className="mr-2 h-4 w-4" />

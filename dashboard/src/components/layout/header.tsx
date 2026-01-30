@@ -1,23 +1,33 @@
 "use client"
 
-import { Search, Bell } from "lucide-react"
-// import { useState } from "react" // Not needed anymore in header
-// import { useRouter } from "next/navigation" // Not needed anymore in header
+import { Search, Bell, Menu } from "lucide-react"
+import { useState } from "react"
 
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { SymbolSearch } from "@/components/search/symbol-search"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sidebar } from "@/components/layout/sidebar"
 
-export function Header() {
-    // const [query, setQuery] = useState("") 
-    // const router = useRouter()
-
-    // const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => { ... } 
-    // removed local search logic
+export function Header({ currentSymbol }: { currentSymbol?: string }) {
+    const [open, setOpen] = useState(false)
 
     return (
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container flex h-14 items-center">
+                <div className="mr-4 md:hidden">
+                    <Sheet open={open} onOpenChange={setOpen}>
+                        <SheetTrigger asChild>
+                            <Button variant="ghost" size="icon" className="md:hidden">
+                                <Menu className="h-5 w-5" />
+                                <span className="sr-only">Toggle Menu</span>
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="p-0 w-72">
+                            <Sidebar className="border-none" currentSymbol={currentSymbol} onNavigate={() => setOpen(false)} />
+                        </SheetContent>
+                    </Sheet>
+                </div>
                 <div className="mr-4 hidden md:flex">
                     <a className="mr-6 flex items-center space-x-2 font-bold" href="/">
                         LOGO

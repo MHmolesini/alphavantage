@@ -13,7 +13,7 @@ export function AppLayout({ children, symbol }: { children: React.ReactNode, sym
                 </Suspense>
             </div>
             <div className="flex-1 flex flex-col overflow-hidden">
-                <Header />
+                <Header currentSymbol={symbol} />
                 <main className="flex-1 overflow-y-auto p-6 scroll-smooth">
                     {children}
                 </main>

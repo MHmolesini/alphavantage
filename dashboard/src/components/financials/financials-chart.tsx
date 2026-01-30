@@ -410,7 +410,7 @@ export function FinancialsChart({ data, selectedConcepts }: FinancialsChartProps
                 </Popover>
             </div>
 
-            <div className="w-full h-[400px] p-4 bg-muted/20 border border-border/50 rounded-xl relative group">
+            <div className="w-full h-[300px] sm:h-[400px] p-4 bg-muted/20 border border-border/50 rounded-xl relative group">
                 <ReactECharts
                     option={option}
                     style={{ height: '100%', width: '100%' }}
