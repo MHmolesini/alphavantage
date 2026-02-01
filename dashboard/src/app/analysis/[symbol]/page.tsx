@@ -323,7 +323,7 @@ export default function AnalysisPage(props: AnalysisPageProps) {
                 </div>
 
                 {/* Main Content */}
-                <div className="flex-1 bg-background flex flex-col min-w-0 overflow-y-auto">
+                <div className="flex-1 bg-background flex flex-col min-w-0 overflow-y-auto scrollbar-hide">
                     {/* Header Filters */}
                     <div className="p-6 border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur z-10 flex items-center justify-between">
                         <div className="flex items-center gap-4">
