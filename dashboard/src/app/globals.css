@@ -99,7 +99,6 @@
   --border: hsl(240 3.7% 15.9%);
   --input: hsl(240 3.7% 15.9%);
   --ring: hsl(240 4.9% 83.9%);
-  --ring: hsl(240 4.9% 83.9%);
 }
 
 @keyframes water-in {
@@ -127,4 +126,16 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+}
+
+/* Scrollbar Hide Utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
