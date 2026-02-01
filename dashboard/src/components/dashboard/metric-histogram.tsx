@@ -9,9 +9,14 @@ interface MetricHistogramProps {
     data: any[]
     concept: string
     base: string
+    highlightDetails?: {
+        value: number
+        period: string
+        symbol: string
+    } | null // Optional explicit details to highlight
 }
 
-export function MetricHistogram({ data, concept, base }: MetricHistogramProps) {
+export function MetricHistogram({ data, concept, base, highlightDetails }: MetricHistogramProps) {
     const { theme } = useTheme()
     const isDark = theme === 'dark'
     const isMobile = useMediaQuery("(max-width: 768px)")
@@ -31,8 +36,6 @@ export function MetricHistogram({ data, concept, base }: MetricHistogramProps) {
         // 1. Extract Values and Latest Value
         // Sort by date descending to find latest
         const sortedData = [...data].sort((a, b) => {
-            // Assuming period_quarter is like "2023 T4" or "2023-12-31" or similar comparable string
-            // Better to use fiscalDateEnding if available for strict sorting
             if (a.fiscalDateEnding && b.fiscalDateEnding) {
                 return b.fiscalDateEnding.localeCompare(a.fiscalDateEnding)
             }
@@ -83,9 +86,30 @@ export function MetricHistogram({ data, concept, base }: MetricHistogramProps) {
             bins[binIndex]++
         })
 
-        // Find bin for latest value
-        let latestBinIndex = Math.floor((latestValue - min) / step)
-        if (latestBinIndex >= binCount) latestBinIndex = binCount - 1
+        // Calculate Cumulative Percentages
+        const totalCount = values.length
+        let runningSum = 0
+        const cumulativePercentages = bins.map(count => {
+            runningSum += count
+            return (runningSum / totalCount) * 100
+        })
+
+        // Find bin for latest value or explicit highlight
+        let targetValue = latestValue
+        let isExplicitHighlight = false
+
+        if (highlightDetails) {
+            targetValue = highlightDetails.value
+            isExplicitHighlight = true
+        }
+
+        let latestBinIndex = -1
+        if (targetValue !== undefined) {
+            latestBinIndex = Math.floor((targetValue - min) / step)
+            if (latestBinIndex >= binCount) latestBinIndex = binCount - 1
+            if (latestBinIndex < 0) latestBinIndex = -1
+            if (targetValue < min) latestBinIndex = 0
+        }
 
         // Format Series Data with styles
         const seriesData = bins.map((count, index) => {
@@ -93,24 +117,15 @@ export function MetricHistogram({ data, concept, base }: MetricHistogramProps) {
             return {
                 value: count,
                 itemStyle: isCurrent ? {
-                    color: {
-                        type: 'linear',
-                        x: 0, y: 0, x2: 0, y2: 1,
-                        colorStops: [
-                            { offset: 0, color: '#f59e0b' }, // Amber-500 for highlight
-                            { offset: 1, color: 'rgba(245, 158, 11, 0.2)' }
-                        ]
-                    },
-                    borderWidth: 2,
-                    borderColor: '#f59e0b'
+                    color: '#f59e0b', // Solid Amber for highlight (No border)
                 } : {
-                    // Default Blue
+                    // Default Premium Gray/Slate
                     color: {
                         type: 'linear',
                         x: 0, y: 0, x2: 0, y2: 1,
                         colorStops: [
-                            { offset: 0, color: '#3b82f6' },
-                            { offset: 1, color: 'rgba(59, 130, 246, 0.1)' }
+                            { offset: 0, color: '#71717a' }, // Zinc-500
+                            { offset: 1, color: 'rgba(113, 113, 122, 0.3)' }
                         ]
                     }
                 }
@@ -136,14 +151,55 @@ export function MetricHistogram({ data, concept, base }: MetricHistogramProps) {
                 },
                 axisPointer: { type: 'shadow' },
                 formatter: (params: any[]) => {
-                    const p = params[0];
-                    const isLatestBin = p.dataIndex === latestBinIndex
+                    // params is array because we have multiple series
+                    const barParam = params.find((p: any) => p.seriesName === 'Frequency');
+                    const lineParam = params.find((p: any) => p.seriesName === 'cumulative');
+
+                    if (!barParam) return '';
+
+                    const isLatestBin = barParam.dataIndex === latestBinIndex
+                    const cumValue = lineParam ? lineParam.value.toFixed(1) : '0';
+
+                    let highlightContent = ''
+                    if (isLatestBin) {
+                        if (isExplicitHighlight && highlightDetails) {
+                            highlightContent = `
+                                <div class="mt-2 pt-2 border-t border-gray-600/30">
+                                    <div class="text-amber-500 font-bold text-xs mb-1">My Account Position</div>
+                                    <div class="flex flex-col gap-1 text-[10px]">
+                                        <div class="flex justify-between gap-4">
+                                             <span class="text-muted-foreground">Account:</span>
+                                             <span class="font-medium font-mono">${highlightDetails.symbol}</span>
+                                        </div>
+                                        <div class="flex justify-between gap-4">
+                                             <span class="text-muted-foreground">Quarter:</span>
+                                             <span class="font-medium font-mono">${highlightDetails.period}</span>
+                                        </div>
+                                        <div class="flex justify-between gap-4">
+                                             <span class="text-muted-foreground">Value:</span>
+                                             <span class="font-bold text-foreground font-mono">${formatAxisValue(highlightDetails.value)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                             `
+                        } else {
+                            highlightContent = `<div class="text-xs text-amber-500 font-bold mt-1">Current Value Range</div>`
+                        }
+                    }
+
                     return `
-                        <div class="font-medium">${p.name}</div>
-                        <div class="text-xs text-muted-foreground mt-1">
-                            Count: <span class="text-foreground font-bold">${p.value}</span>
+                        <div class="font-medium mb-1">${barParam.name}</div>
+                        <div class="text-xs text-muted-foreground space-y-1">
+                            <div class="flex justify-between items-center gap-4">
+                                <span>Frequency:</span>
+                                <span class="text-foreground font-bold">${barParam.value}</span>
+                            </div>
+                            <div class="flex justify-between items-center gap-4">
+                                <span>Cumulative:</span>
+                                <span class="text-blue-500 font-bold">${cumValue}%</span>
+                            </div>
                         </div>
-                        ${isLatestBin ? '<div class="text-xs text-amber-500 font-bold mt-1">Current Value Range</div>' : ''}
+                        ${highlightContent}
                     `
                 }
             },
@@ -153,9 +209,6 @@ export function MetricHistogram({ data, concept, base }: MetricHistogramProps) {
             xAxis: {
                 type: 'category',
                 data: categories,
-                name: 'Value Range',
-                nameLocation: 'middle',
-                nameGap: 30,
                 axisLine: { show: false },
                 axisTick: { show: false },
                 axisLabel: {
@@ -164,42 +217,66 @@ export function MetricHistogram({ data, concept, base }: MetricHistogramProps) {
                     interval: 'auto',
                     hideOverlap: true,
                     rotate: 45,
-                    formatter: (value: string) => {
-                        const parts = value.split(' - ')
-                        // On very small screens, showing just the start might be cleaner,
-                        // but with rotation and auto-interval, full range is usually ok.
-                        return value
+                    formatter: (value: string) => value
+                }
+            },
+            yAxis: [
+                {
+                    type: 'value',
+                    splitLine: {
+                        show: true,
+                        lineStyle: { color: isDark ? '#27272a' : '#f4f4f5', type: 'dashed' }
+                    },
+                    axisLabel: {
+                        color: isDark ? '#71717a' : '#a1a1aa',
+                        fontSize: 10
+                    }
+                },
+                {
+                    type: 'value',
+                    min: 0,
+                    max: 100,
+                    splitLine: { show: false },
+                    axisLabel: {
+                        color: isDark ? '#71717a' : '#a1a1aa',
+                        fontSize: 10,
+                        formatter: '{value}%'
                     }
                 }
-            },
-            yAxis: {
-                type: 'value',
-                name: 'Frequency',
-                splitLine: {
-                    show: true,
-                    lineStyle: { color: isDark ? '#27272a' : '#f4f4f5', type: 'dashed' }
-                },
-                axisLabel: {
-                    color: isDark ? '#71717a' : '#a1a1aa',
-                    fontSize: 10
-                }
-            },
+            ],
             series: [
                 {
                     name: 'Frequency',
                     type: 'bar',
-                    data: seriesData, // Use the styled data objects
+                    data: seriesData,
                     itemStyle: {
                         borderRadius: [4, 4, 0, 0]
-                        // Color is now handled per-item in seriesData
                     },
-                    barMaxWidth: 90 // Wider bars for histogram look
+                    barMaxWidth: 90
+                },
+                {
+                    name: 'cumulative',
+                    type: 'line',
+                    yAxisIndex: 1, // Use secondary axis
+                    data: cumulativePercentages,
+                    symbol: 'circle',
+                    symbolSize: 6,
+                    itemStyle: {
+                        color: '#3b82f6', // Blue-500
+                        borderColor: isDark ? '#000' : '#fff',
+                        borderWidth: 2
+                    },
+                    lineStyle: {
+                        width: 2,
+                        type: 'dashed'
+                    },
+                    smooth: true
                 }
             ],
             animationEasing: 'elasticOut',
             animationDelayUpdate: (idx: number) => idx * 5
         }
-    }, [data, concept, isDark, isMobile])
+    }, [data, concept, isDark, isMobile, highlightDetails])
 
     return (
         <div className="w-full h-[400px] p-4 bg-muted/20 border border-border/50 rounded-xl relative">

@@ -440,3 +440,61 @@ export async function getDashboardMetrics(symbol: string, base: string) {
     return [];
   }
 }
+
+export async function getMarketMetricData(base: string, concept: string, periods?: string[]) {
+  console.log(`[getMarketMetricData] Fetching for ${base} - ${concept} - ${periods?.length ? periods.join(',') : 'ALL'}`);
+
+  // Base query: fetch value for all symbols for the concept
+  let query = `
+    SELECT 
+      symbol, base, report_type, fiscalDateEnding, period_quarter, concept, value
+    FROM \`development.base\`
+    WHERE base = @base
+      AND concept = @concept
+      AND value IS NOT NULL
+  `
+
+  // Add filters
+  const params: any = { base, concept }
+
+  if (periods && periods.length > 0) {
+    query += ` AND period_quarter IN UNNEST(@periods)`
+    params.periods = periods
+  }
+
+  // Order
+  query += ` ORDER BY fiscalDateEnding DESC`
+
+  try {
+    const [rows] = await bigquery.query({
+      query,
+      params,
+    })
+    console.log(`[getMarketMetricData] Found ${rows.length} rows`);
+    return rows.map((row: any) => ({
+      ...row,
+      fiscalDateEnding: row.fiscalDateEnding?.value || row.fiscalDateEnding
+    })) as FinancialRecord[]
+  } catch (error) {
+    console.error("BigQuery Error getMarketMetricData:", error)
+    return []
+  }
+}
+
+export async function getAvailablePeriods(base: string) {
+  const query = `
+        SELECT DISTINCT period_quarter
+        FROM \`development.base\`
+        WHERE base = @base
+        ORDER BY period_quarter DESC
+    `
+  try {
+    const [rows] = await bigquery.query({
+      query,
+      params: { base }
+    })
+    return rows.map((r: any) => r.period_quarter as string)
+  } catch (error) {
+    return []
+  }
+}
