@@ -4,10 +4,10 @@ import React, { useMemo } from 'react'
 import ReactECharts from 'echarts-for-react'
 import { useTheme } from 'next-themes'
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { linearRegression, logarithmicRegression, type Point } from '@/lib/regression'
+import { linearRegression, logarithmicRegression, polynomialRegression, type Point, type RegressionResult } from '@/lib/regression'
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
-import { Settings2, Check } from "lucide-react"
+import { Settings2, Check, Plus, Minus } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface MetricScatterProps {
@@ -28,7 +28,21 @@ export function MetricScatter({ data, xName, yName, highlightSymbol, yScale = 'v
     const isDark = theme === 'dark'
     const isMobile = useMediaQuery("(max-width: 768px)")
 
-    const [trendlineType, setTrendlineType] = React.useState<'none' | 'linear' | 'log'>('none')
+    const [trendlineType, setTrendlineType] = React.useState<'none' | 'linear' | 'log' | 'poly'>('none')
+    const [polyOrder, setPolyOrder] = React.useState<number>(2)
+
+    // Calculate Regression separately to expose Stats
+    const regressionRes = useMemo(() => {
+        if (!data || data.length === 0 || trendlineType === 'none') return null
+        const points: Point[] = data.map(d => [d.x, d.y])
+
+        switch (trendlineType) {
+            case 'linear': return linearRegression(points)
+            case 'log': return logarithmicRegression(points)
+            case 'poly': return polynomialRegression(points, polyOrder)
+            default: return null
+        }
+    }, [data, trendlineType, polyOrder])
 
     const option = useMemo(() => {
         if (!data || data.length === 0) return {}
@@ -45,15 +59,8 @@ export function MetricScatter({ data, xName, yName, highlightSymbol, yScale = 'v
             : []
         const bgPoints = data.filter(d => d.symbol !== highlightSymbol).map(d => [d.x, d.y, d.symbol, d.period])
 
-        // --- 2. Trendline Calculation ---
-        let trendlineData: number[][] = []
-        if (trendlineType !== 'none') {
-            const points: Point[] = data.map(d => [d.x, d.y])
-            const res = trendlineType === 'linear'
-                ? linearRegression(points)
-                : logarithmicRegression(points)
-            trendlineData = res.points
-        }
+        // --- 2. Trendline Data ---
+        const trendlineData = regressionRes ? regressionRes.points : []
 
         const series: any[] = []
 
@@ -69,7 +76,7 @@ export function MetricScatter({ data, xName, yName, highlightSymbol, yScale = 'v
         })
 
         // Series 2: Trendline
-        if (trendlineType !== 'none' && trendlineData.length > 0) {
+        if (trendlineData.length > 0) {
             series.push({
                 name: 'Trend',
                 type: 'line',
@@ -135,7 +142,10 @@ export function MetricScatter({ data, xName, yName, highlightSymbol, yScale = 'v
                 borderColor: isDark ? '#3f3f46' : '#e4e4e7',
                 textStyle: { color: isDark ? '#fafafa' : '#18181b', fontSize: 12 },
                 formatter: (params: any) => {
-                    if (params.seriesName === 'Trend') return `${trendlineType === 'linear' ? 'Linear' : 'Log'} Trendline`
+                    if (params.seriesName === 'Trend') {
+                        const r2Str = regressionRes ? `<div class="mt-1 opacity-75 text-[10px]">R²: ${regressionRes.r2.toFixed(3)}</div>` : ''
+                        return `<b>${trendlineType === 'poly' ? `Poly (${polyOrder})` : trendlineType === 'linear' ? 'Linear' : 'Log'} Trendline</b>${r2Str}`
+                    }
 
                     const d = params.data
                     const values = Array.isArray(d) ? d : d.value
@@ -186,21 +196,22 @@ export function MetricScatter({ data, xName, yName, highlightSymbol, yScale = 'v
             },
             series
         }
-    }, [data, xName, yName, isDark, highlightSymbol, yScale, trendlineType])
+    }, [data, xName, yName, isDark, highlightSymbol, yScale, trendlineType, regressionRes, polyOrder])
 
     return (
         <div className="w-full flex flex-col gap-4">
             {/* Header: Title & Options Outside */}
             <div className="flex items-center justify-between">
                 <div>
-                    {/* Can put a title here if I pass it down or extract it,
-                         but page.tsx already renders a title above MetricScatter?
-                         Wait, page.tsx renders "Correlation Analysis ... Comparing X vs Y".
-                         MetricScatter previously rendered a border with a title INSIDE.
-                         User wants "Filter outside".
-                         If I move filter outside, I should probably keep the chart Frame clean.
-                         Or simple: Just render the Options Row here.
-                     */}
+                    {/* R2 Display if valid */}
+                    {regressionRes && (
+                        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
+                            <div className="text-xs font-mono bg-primary/10 text-primary px-2 py-1 rounded-sm border border-primary/20">
+                                R² = {regressionRes.r2.toFixed(4)}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">Correlation</div>
+                        </div>
+                    )}
                 </div>
 
                 <Popover>
@@ -210,33 +221,59 @@ export function MetricScatter({ data, xName, yName, highlightSymbol, yScale = 'v
                             <span className="text-xs">Overlay Options</span>
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-56 p-2" align="end">
-                        <div className="space-y-3">
+                    <PopoverContent className="w-64 p-2 bg-[#09090b] border-white/10 shadow-2xl" align="end">
+                        <div className="space-y-4 p-1">
+                            {/* Trendline Type */}
                             <div className="space-y-1">
-                                <h4 className="text-xs font-semibold text-muted-foreground px-2 mb-2">Trendlines</h4>
+                                <h4 className="text-xs font-semibold text-muted-foreground px-2 mb-2 uppercase tracking-wider">Trendlines</h4>
 
                                 <div
-                                    className={cn("flex items-center justify-between px-2 py-1.5 rounded-sm cursor-pointer hover:bg-muted/50 text-sm", trendlineType === 'none' && "bg-muted/50")}
+                                    className={cn("flex items-center justify-between px-2 py-1.5 rounded-sm cursor-pointer hover:bg-white/5 text-sm transition-colors", trendlineType === 'none' && "bg-white/10")}
                                     onClick={() => setTrendlineType('none')}
                                 >
                                     <span>None</span>
                                     {trendlineType === 'none' && <Check className="h-4 w-4" />}
                                 </div>
                                 <div
-                                    className={cn("flex items-center justify-between px-2 py-1.5 rounded-sm cursor-pointer hover:bg-muted/50 text-sm", trendlineType === 'linear' && "bg-muted/50")}
+                                    className={cn("flex items-center justify-between px-2 py-1.5 rounded-sm cursor-pointer hover:bg-white/5 text-sm transition-colors", trendlineType === 'linear' && "bg-white/10")}
                                     onClick={() => setTrendlineType('linear')}
                                 >
                                     <span>Linear</span>
                                     {trendlineType === 'linear' && <Check className="h-4 w-4" />}
                                 </div>
                                 <div
-                                    className={cn("flex items-center justify-between px-2 py-1.5 rounded-sm cursor-pointer hover:bg-muted/50 text-sm", trendlineType === 'log' && "bg-muted/50")}
+                                    className={cn("flex items-center justify-between px-2 py-1.5 rounded-sm cursor-pointer hover:bg-white/5 text-sm transition-colors", trendlineType === 'log' && "bg-white/10")}
                                     onClick={() => setTrendlineType('log')}
                                 >
                                     <span>Logarithmic</span>
                                     {trendlineType === 'log' && <Check className="h-4 w-4" />}
                                 </div>
+                                <div
+                                    className={cn("flex items-center justify-between px-2 py-1.5 rounded-sm cursor-pointer hover:bg-white/5 text-sm transition-colors", trendlineType === 'poly' && "bg-white/10")}
+                                    onClick={() => setTrendlineType('poly')}
+                                >
+                                    <span>Polynomial</span>
+                                    {trendlineType === 'poly' && <Check className="h-4 w-4" />}
+                                </div>
                             </div>
+
+                            {/* Poly Order Control (Only if Poly selected) */}
+                            {trendlineType === 'poly' && (
+                                <div className="space-y-1 pt-2 border-t border-white/10">
+                                    <h4 className="text-xs font-semibold text-muted-foreground px-2 mb-2 uppercase tracking-wider">Polynomial Degree</h4>
+                                    <div className="flex items-center justify-between px-2">
+                                        <span className="text-sm font-mono text-muted-foreground">Order: <span className="text-foreground">{polyOrder}</span></span>
+                                        <div className="flex items-center gap-1">
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-white/10" onClick={() => setPolyOrder(Math.max(2, polyOrder - 1))}>
+                                                <Minus className="h-3 w-3" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-white/10" onClick={() => setPolyOrder(Math.min(6, polyOrder + 1))}>
+                                                <Plus className="h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </PopoverContent>
                 </Popover>
