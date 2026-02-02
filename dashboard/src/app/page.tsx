@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { AppLayout } from "@/components/layout/app-layout"
 import { SymbolSearch } from "@/components/search/symbol-search"
 import { MetricHistogram } from "@/components/dashboard/metric-histogram"
+import { MetricSankey } from "@/components/dashboard/metric-sankey"
 import { getFinancials, getMarketMetricData, getAvailablePeriods } from "@/app/actions/financials"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -23,6 +24,145 @@ export default function Home() {
   const [marketData, setMarketData] = useState<any[]>([])
   const [availablePeriods, setAvailablePeriods] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
+
+  // Sankey State
+  const [sankeyRawData, setSankeyRawData] = useState<any[]>([])
+  const [sankeyPeriods, setSankeyPeriods] = useState<string[]>([])
+  const [sankeySelectedPeriod, setSankeySelectedPeriod] = useState<string | null>(null)
+  const [sankeyComparisonMode, setSankeyComparisonMode] = useState<"qoq" | "yoy">("qoq")
+
+  const [sankeyData, setSankeyData] = useState<{
+    revenue: number,
+    costOfRevenue: number,
+    grossProfit: number,
+    depreciation?: number,
+    operatingExpenses?: number,
+    sga?: number,
+    rAndD?: number,
+    incomeTaxExpense?: number,
+    netIncome?: number,
+    currency?: string,
+    previousData?: {
+      revenue: number,
+      costOfRevenue: number,
+      grossProfit: number,
+      depreciation: number,
+      operatingExpenses: number,
+      sga: number,
+      rAndD: number,
+      incomeTaxExpense: number,
+      netIncome: number
+    },
+    comparisonMode?: "qoq" | "yoy"
+  } | null>(null)
+
+  // 1. Fetch Income Data for Sankey (Independent of Filter Base)
+  useEffect(() => {
+    if (!selectedSymbol) return
+
+    const fetchSankeyData = async () => {
+      try {
+        const res = await getFinancials(selectedSymbol, 'income_statements')
+
+        // Filter for Quarterly reports only
+        const quarterlyData = res.filter((r: any) => r.report_type === 'quarterly' || r.period_quarter.includes('Q') || r.period_quarter.includes('T'))
+
+        const periods = Array.from(new Set(quarterlyData.map((r: any) => r.period_quarter))).sort()
+
+        setSankeyRawData(quarterlyData)
+        setSankeyPeriods(periods)
+
+        // Default to latest period
+        const latestPeriod = periods[periods.length - 1]
+        if (latestPeriod) {
+          setSankeySelectedPeriod(latestPeriod)
+        }
+      } catch (e) {
+        console.error("Error fetching sankey data", e)
+      }
+    }
+    fetchSankeyData()
+  }, [selectedSymbol])
+
+  // 2. Derive Sankey Data when Period Selected
+  useEffect(() => {
+    if (!sankeySelectedPeriod || sankeyRawData.length === 0) return
+
+    // Helper to extract data for a specific period
+    const getDataForPeriod = (period: string) => {
+      const periodData = sankeyRawData.filter((r: any) => r.period_quarter === period)
+      if (!periodData.length) return null
+
+      const getValue = (concept: string) => periodData.find((r: any) => r.concept === concept)?.value || 0
+
+      const revenue = getValue('totalRevenue') || getValue('TotalRevenue') || getValue('Total Revenue') || getValue('Sales')
+      const cost = getValue('costOfRevenue') || getValue('costOfGoodsAndServicesSold') || getValue('CostOfRevenue') || getValue('Cost of Revenue')
+      const gross = getValue('grossProfit') || getValue('GrossProfit') || getValue('Gross Profit')
+      const depreciation = getValue('depreciationAndAmortization') || getValue('DepreciationAndAmortization') || getValue('Depreciation')
+      const operatingExpenses = getValue('operatingExpenses') || getValue('OperatingExpenses')
+      const sga = getValue('sellingGeneralAndAdministrative') || getValue('SellingGeneralAndAdministrative')
+      const rAndD = getValue('researchAndDevelopment') || getValue('ResearchAndDevelopment')
+      const incomeTaxExpense = getValue('incomeTaxExpense') || getValue('IncomeTaxExpense')
+      const netIncome = getValue('netIncome') || getValue('NetIncome')
+      const currency = (periodData[0] as any)?.reported_currency || 'USD'
+
+      return {
+        revenue,
+        costOfRevenue: cost,
+        grossProfit: gross,
+        depreciation,
+        operatingExpenses,
+        sga,
+        rAndD,
+        incomeTaxExpense,
+        netIncome,
+        currency
+      }
+    }
+
+    // Current Data
+    const current = getDataForPeriod(sankeySelectedPeriod)
+
+    // Previous Data Comparison Logic
+    let previous = null
+
+    if (sankeyComparisonMode === 'qoq') {
+      // Compare with immediate previous period in the sorted list
+      const currentIndex = sankeyPeriods.indexOf(sankeySelectedPeriod)
+      if (currentIndex > 0) {
+        const prevPeriod = sankeyPeriods[currentIndex - 1]
+        previous = getDataForPeriod(prevPeriod)
+      }
+    } else {
+      // YoY: Find same quarter in previous year
+      // Format expected: "2024 Q1", "2023 Q4" etc. or "2024-03-31"? 
+      // sankeyPeriods comes from 'period_quarter' which seems to be "YYYY QX" or similar based on user context
+      // Let's assume standard "YYYY QX" or try to parse year.
+
+      // Regex to parse Year and Quarter
+      const match = sankeySelectedPeriod.match(/(\d{4})[^\d]*(Q\d|T\d)/i)
+      if (match) {
+        const year = parseInt(match[1])
+        const quarterPart = match[2] // e.g., "Q1"
+        const prevYear = year - 1
+        const targetPrevPeriod = sankeyPeriods.find(p => p.includes(prevYear.toString()) && p.includes(quarterPart))
+
+        if (targetPrevPeriod) {
+          previous = getDataForPeriod(targetPrevPeriod)
+        }
+      }
+    }
+
+    if (current && current.revenue) {
+      setSankeyData({
+        ...current,
+        previousData: previous || undefined,
+        comparisonMode: sankeyComparisonMode
+      })
+    } else {
+      setSankeyData(null)
+    }
+  }, [sankeySelectedPeriod, sankeyRawData, sankeyPeriods, sankeyComparisonMode])
 
   // Filters State
   const [scope, setScope] = useState<"me" | "market">("me") // "me" or "market"
@@ -334,6 +474,73 @@ export default function Home() {
                           }
                         </p>
                       </div>
+
+                      {/* Sankey Chart Section */}
+                      {sankeyData && (
+                        <div className="space-y-4 pt-4 border-t border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-medium opacity-70">Revenue Flow & Cost Breakdown</h4>
+
+                            {/* Sankey Period Filter & Comparison Toggle */}
+                            <div className="flex items-center gap-2">
+                              <div className="flex bg-muted/30 border border-border/30 rounded-lg p-0.5 h-7">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={cn("h-6 px-2 text-[10px] rounded-md", sankeyComparisonMode === 'qoq' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}
+                                  onClick={() => setSankeyComparisonMode("qoq")}
+                                >
+                                  QoQ
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={cn("h-6 px-2 text-[10px] rounded-md", sankeyComparisonMode === 'yoy' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}
+                                  onClick={() => setSankeyComparisonMode("yoy")}
+                                >
+                                  YoY
+                                </Button>
+                              </div>
+
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="outline" size="sm" className="h-7 gap-2 bg-muted/30 border-border/30 text-xs text-muted-foreground hover:text-foreground">
+                                    <Filter className="h-3 w-3" />
+                                    <span>{sankeySelectedPeriod || "Select Period"}</span>
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[150px] p-0" align="end">
+                                  <Command>
+                                    <CommandInput placeholder="Search..." className="h-8 text-xs" />
+                                    <CommandList>
+                                      <CommandEmpty>No periods.</CommandEmpty>
+                                      <CommandGroup className="max-h-[200px] overflow-auto">
+                                        {[...sankeyPeriods].reverse().map((period) => (
+                                          <CommandItem
+                                            key={period}
+                                            onSelect={() => setSankeySelectedPeriod(period)}
+                                            className="text-xs"
+                                          >
+                                            <div className={cn(
+                                              "mr-2 flex h-4 w-4 items-center justify-center rounded-sm",
+                                              sankeySelectedPeriod === period ? "opacity-100" : "opacity-0"
+                                            )}>
+                                              <Check className="h-3 w-3" />
+                                            </div>
+                                            {period}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          </div>
+
+                          <MetricSankey data={sankeyData} />
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-64 text-muted-foreground space-y-2 opacity-50">

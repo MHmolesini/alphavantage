@@ -6,7 +6,7 @@ import { useState } from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { SymbolSearch } from "@/components/search/symbol-search"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { Sidebar } from "@/components/layout/sidebar"
 
 export function Header({ currentSymbol }: { currentSymbol?: string }) {
@@ -24,6 +24,7 @@ export function Header({ currentSymbol }: { currentSymbol?: string }) {
                             </Button>
                         </SheetTrigger>
                         <SheetContent side="left" className="p-0 w-72">
+                            <SheetTitle className="sr-only">Menu</SheetTitle>
                             <Sidebar className="border-none" currentSymbol={currentSymbol} onNavigate={() => setOpen(false)} />
                         </SheetContent>
                     </Sheet>

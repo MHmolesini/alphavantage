@@ -11,6 +11,7 @@ export type FinancialRecord = {
   concept: string
   value: number
   value_ttm: number
+  reported_currency?: string
   // Add other fields if needed
 }
 
