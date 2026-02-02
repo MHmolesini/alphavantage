@@ -355,7 +355,7 @@ export function MetricSankey({ data }: MetricSankeyProps) {
                 </h3>
             </div>
 
-            <div className="w-full h-[500px] bg-muted/10 border border-border/30 rounded-xl p-4 relative">
+            <div className="w-full h-[500px] bg-muted/20 border border-border/50 rounded-xl p-4 relative">
                 <ReactECharts
                     option={option}
                     style={{ height: '100%', width: '100%' }}
