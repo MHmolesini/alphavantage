@@ -11,9 +11,10 @@ import { Input } from "@/components/ui/input"
 interface FinancialsChartProps {
     data: any[]
     selectedConcepts: string[]
+    variationType?: "none" | "qoq" | "yoy"
 }
 
-export function FinancialsChart({ data, selectedConcepts }: FinancialsChartProps) {
+export function FinancialsChart({ data, selectedConcepts, variationType = 'none' }: FinancialsChartProps) {
     const { theme } = useTheme()
     const isDark = theme === 'dark'
 
@@ -242,6 +243,34 @@ export function FinancialsChart({ data, selectedConcepts }: FinancialsChartProps
                     z: 10 // Above bars
                 })
             }
+
+            // Variation Series using Secondary Y-Axis
+            if (variationType && variationType !== 'none') {
+                const variationData = data.map(d => d[`${concept}_variation`])
+                series.push({
+                    name: `${concept} (${variationType.toUpperCase()})`,
+                    type: 'line',
+                    yAxisIndex: 1, // Use secondary axis
+                    data: variationData,
+                    smooth: true,
+                    symbol: 'circle', // Circles as requested
+                    symbolSize: 6,
+                    itemStyle: {
+                        color: colorSet[0],
+                        borderColor: isDark ? '#18181b' : '#ffffff',
+                        borderWidth: 1.5
+                    },
+                    lineStyle: {
+                        color: colorSet[0],
+                        width: 2,
+                        type: 'dashed' // Dashed to differentiate from main values
+                    },
+                    tooltip: {
+                        valueFormatter: (value: number) => value ? `${value.toFixed(1)}%` : 'N/A'
+                    },
+                    z: 20
+                })
+            }
         })
 
         return {
@@ -264,9 +293,8 @@ export function FinancialsChart({ data, selectedConcepts }: FinancialsChartProps
             },
             legend: {
                 data: selectedConcepts.concat(
-                    config.movingAverage > 1
-                        ? selectedConcepts.map(c => `${c} MA(${config.movingAverage})`)
-                        : []
+                    config.movingAverage > 1 ? selectedConcepts.map(c => `${c} MA(${config.movingAverage})`) : [],
+                    (variationType && variationType !== 'none') ? selectedConcepts.map(c => `${c} (${variationType.toUpperCase()})`) : []
                 ),
                 bottom: 0,
                 textStyle: {
@@ -295,30 +323,44 @@ export function FinancialsChart({ data, selectedConcepts }: FinancialsChartProps
                     margin: 15
                 }
             },
-            yAxis: {
-                type: 'value',
-                splitLine: {
-                    show: true,
-                    lineStyle: {
-                        color: isDark ? '#27272a' : '#f4f4f5',
-                        type: 'dashed'
+            yAxis: [
+                // Primary Axis (Values)
+                {
+                    type: 'value',
+                    splitLine: {
+                        show: true,
+                        lineStyle: {
+                            color: isDark ? '#27272a' : '#f4f4f5',
+                            type: 'dashed'
+                        }
+                    },
+                    axisLabel: {
+                        color: isDark ? '#71717a' : '#a1a1aa',
+                        fontSize: 10,
+                        formatter: (value: number) => {
+                            return new Intl.NumberFormat('en-US', {
+                                notation: "compact",
+                                compactDisplay: "short"
+                            }).format(value)
+                        }
                     }
                 },
-                axisLabel: {
-                    color: isDark ? '#71717a' : '#a1a1aa',
-                    fontSize: 10,
-                    formatter: (value: number) => {
-                        return new Intl.NumberFormat('en-US', {
-                            notation: "compact",
-                            compactDisplay: "short"
-                        }).format(value)
+                // Secondary Axis (Variation %)
+                {
+                    type: 'value',
+                    show: (variationType && variationType !== 'none'),
+                    splitLine: { show: false },
+                    axisLabel: {
+                        color: isDark ? '#71717a' : '#a1a1aa',
+                        fontSize: 10,
+                        formatter: '{value}%'
                     }
                 }
-            },
+            ],
             series: series,
             animationDelayUpdate: (idx: number) => idx * 5
         }
-    }, [data, selectedConcepts, isDark, config])
+    }, [data, selectedConcepts, isDark, config, variationType])
 
     return (
         <div className="space-y-4">

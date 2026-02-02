@@ -214,8 +214,9 @@ export function FinancialsDashboard({
         const chartData = chartPeriods.map(period => {
             const row: any = { period }
             selectedConcepts.forEach(concept => {
-                const record = rawData.find(d => d.concept === concept && (d.period_quarter === period || d.fiscalDateEnding === period))
-                row[concept] = record ? record.value : null
+                const cellData = getCellData(concept, period)
+                row[concept] = cellData.value
+                row[`${concept}_variation`] = cellData.variation
             })
             return row
         })
@@ -281,7 +282,7 @@ export function FinancialsDashboard({
 
                 {/* Income Tab */}
                 <TabsContent value="income" className="space-y-8 mt-6">
-                    <FinancialsChart data={incomeProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    <FinancialsChart data={incomeProcessed.chartData} selectedConcepts={selectedConcepts} variationType={variationType} />
                     {renderControls()}
                     <FinancialsTable
                         data={incomeProcessed.tableData}
@@ -293,7 +294,7 @@ export function FinancialsDashboard({
 
                 {/* Balance Tab */}
                 <TabsContent value="balance" className="space-y-8 mt-6">
-                    <FinancialsChart data={balanceProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    <FinancialsChart data={balanceProcessed.chartData} selectedConcepts={selectedConcepts} variationType={variationType} />
                     {renderControls()}
                     <FinancialsTable
                         data={balanceProcessed.tableData}
@@ -305,7 +306,7 @@ export function FinancialsDashboard({
 
                 {/* Cash Flow Tab */}
                 <TabsContent value="cash" className="space-y-8 mt-6">
-                    <FinancialsChart data={cashProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    <FinancialsChart data={cashProcessed.chartData} selectedConcepts={selectedConcepts} variationType={variationType} />
                     {renderControls()}
                     <FinancialsTable
                         data={cashProcessed.tableData}
@@ -317,7 +318,7 @@ export function FinancialsDashboard({
 
                 {/* Profitability Tab */}
                 <TabsContent value="profitability" className="space-y-8 mt-6">
-                    <FinancialsChart data={profitabilityProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    <FinancialsChart data={profitabilityProcessed.chartData} selectedConcepts={selectedConcepts} variationType={variationType} />
                     {renderControls()}
                     <FinancialsTable
                         data={profitabilityProcessed.tableData}
@@ -329,7 +330,7 @@ export function FinancialsDashboard({
 
                 {/* Liquidity Tab */}
                 <TabsContent value="liquidity" className="space-y-8 mt-6">
-                    <FinancialsChart data={liquidityProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    <FinancialsChart data={liquidityProcessed.chartData} selectedConcepts={selectedConcepts} variationType={variationType} />
                     {renderControls()}
                     <FinancialsTable
                         data={liquidityProcessed.tableData}
@@ -341,7 +342,7 @@ export function FinancialsDashboard({
 
                 {/* Indebtedness Tab */}
                 <TabsContent value="indebtedness" className="space-y-8 mt-6">
-                    <FinancialsChart data={indebtednessProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    <FinancialsChart data={indebtednessProcessed.chartData} selectedConcepts={selectedConcepts} variationType={variationType} />
                     {renderControls()}
                     <FinancialsTable
                         data={indebtednessProcessed.tableData}
@@ -353,7 +354,7 @@ export function FinancialsDashboard({
 
                 {/* Management Tab */}
                 <TabsContent value="management" className="space-y-8 mt-6">
-                    <FinancialsChart data={managementProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    <FinancialsChart data={managementProcessed.chartData} selectedConcepts={selectedConcepts} variationType={variationType} />
                     {renderControls()}
                     <FinancialsTable
                         data={managementProcessed.tableData}
@@ -365,7 +366,7 @@ export function FinancialsDashboard({
 
                 {/* Assessment Tab */}
                 <TabsContent value="assessment" className="space-y-8 mt-6">
-                    <FinancialsChart data={assessmentProcessed.chartData} selectedConcepts={selectedConcepts} />
+                    <FinancialsChart data={assessmentProcessed.chartData} selectedConcepts={selectedConcepts} variationType={variationType} />
                     {renderControls()}
                     <FinancialsTable
                         data={assessmentProcessed.tableData}
