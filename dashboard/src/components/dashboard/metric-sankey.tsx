@@ -119,7 +119,7 @@ export function MetricSankey({ data }: MetricSankeyProps) {
         }
 
         // Nodes
-        const nodes = [
+        const nodes: { name: string; itemStyle: { color: string }; depth?: number }[] = [
             { name: 'Total Revenue', itemStyle: { color: isDark ? '#3b82f6' : '#2563eb' } }, // Blue
             { name: 'Cost of Revenue', itemStyle: { color: isDark ? '#ef4444' : '#dc2626' } }, // Red
             { name: 'Gross Profit', itemStyle: { color: isDark ? '#22c55e' : '#16a34a' } } // Green
