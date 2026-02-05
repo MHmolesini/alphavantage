@@ -32,6 +32,8 @@ export function FinancialsDashboard({
 }: FinancialsDashboardProps) {
     const [selectedConcepts, setSelectedConcepts] = useState<string[]>([])
     const [variationType, setVariationType] = useState<"none" | "qoq" | "yoy">("qoq")
+    const [periodType, setPeriodType] = useState<"quarterly" | "ttm">("quarterly")
+    const [activeTab, setActiveTab] = useState("income")
 
     const handleToggleConcept = (concept: string) => {
         setSelectedConcepts(prev => {
@@ -146,13 +148,40 @@ export function FinancialsDashboard({
         const allPeriods = Array.from(new Set(rawData.map(d => d.period_quarter || d.fiscalDateEnding)))
             .sort((a: any, b: any) => new Date(b).getTime() - new Date(a).getTime())
 
-        // Displayed periods (top 20)
-        const periods = allPeriods.slice(0, 30)
+        // TTM Calculation Helper
+        const getTTMValue = (concept: string, period: string) => {
+            const currentIndex = allPeriods.indexOf(period)
+            // Need current + 3 previous (total 4)
+            if (currentIndex + 3 >= allPeriods.length) return null
+
+            const relevantPeriods = allPeriods.slice(currentIndex, currentIndex + 4)
+            let sum = 0
+            let count = 0
+
+            for (const p of relevantPeriods) {
+                const record = rawData.find(d => d.concept === concept && (d.period_quarter === p || d.fiscalDateEnding === p))
+                if (record && typeof record.value === 'number') {
+                    sum += record.value
+                    count++
+                }
+            }
+
+            return count === 4 ? sum : null
+        }
+
+        // Displayed periods (top 30)
+        let periods = allPeriods.slice(0, 30)
 
         // Helper to get value and variation
         const getCellData = (concept: string, period: string) => {
-            const currentRecord = rawData.find(d => d.concept === concept && (d.period_quarter === period || d.fiscalDateEnding === period))
-            const currentValue = currentRecord ? currentRecord.value : null
+            let currentValue: number | null = null
+
+            if (periodType === 'ttm') {
+                currentValue = getTTMValue(concept, period)
+            } else {
+                const currentRecord = rawData.find(d => d.concept === concept && (d.period_quarter === period || d.fiscalDateEnding === period))
+                currentValue = currentRecord ? currentRecord.value : null
+            }
 
             if (currentValue === null) return { value: null, variation: null }
 
@@ -167,8 +196,15 @@ export function FinancialsDashboard({
 
             let variation = null
             if (previousPeriod) {
-                const prevRecord = rawData.find(d => d.concept === concept && (d.period_quarter === previousPeriod || d.fiscalDateEnding === previousPeriod))
-                const prevValue = prevRecord ? prevRecord.value : null
+                let prevValue: number | null = null
+
+                if (periodType === 'ttm') {
+                    prevValue = getTTMValue(concept, previousPeriod)
+                } else {
+                    const prevRecord = rawData.find(d => d.concept === concept && (d.period_quarter === previousPeriod || d.fiscalDateEnding === previousPeriod))
+                    prevValue = prevRecord ? prevRecord.value : null
+                }
+
                 if (prevValue) {
                     variation = ((currentValue - prevValue) / Math.abs(prevValue)) * 100
                 }
@@ -181,22 +217,16 @@ export function FinancialsDashboard({
         const buildHierarchy = (struct: any[]): any[] => {
             return struct.map(item => {
                 const row: any = { concept: item.concept, children: [] }
-
-                // Populate period data
                 periods.forEach(period => {
                     row[period] = getCellData(item.concept, period)
                 })
-
-                // Recurse for children
                 if (item.children) {
                     row.children = buildHierarchy(item.children)
                 }
-
                 return row
             })
         }
 
-        // Helper for flat list (if no structure provided)
         const buildFlat = () => {
             const concepts = Array.from(new Set(rawData.map(d => d.concept)))
             return concepts.map(concept => {
@@ -224,21 +254,45 @@ export function FinancialsDashboard({
         return { chartData, tableData, periods }
     }
 
-    // Memoize processed data for each tab
-    const incomeProcessed = useMemo(() => processData(income, INCOME_STRUCTURE), [income, selectedConcepts, variationType])
-    const balanceProcessed = useMemo(() => processData(balance, BALANCE_STRUCTURE), [balance, selectedConcepts, variationType])
-    const cashProcessed = useMemo(() => processData(cashFlow), [cashFlow, selectedConcepts, variationType])
+    // Memoize processed data dependencies updated with periodType
+    const incomeProcessed = useMemo(() => processData(income, INCOME_STRUCTURE), [income, selectedConcepts, variationType, periodType])
+    const balanceProcessed = useMemo(() => processData(balance, BALANCE_STRUCTURE), [balance, selectedConcepts, variationType, periodType])
+    const cashProcessed = useMemo(() => processData(cashFlow), [cashFlow, selectedConcepts, variationType, periodType])
 
-    // New categories (Flat structure)
-    const profitabilityProcessed = useMemo(() => processData(profitability), [profitability, selectedConcepts, variationType])
-    const liquidityProcessed = useMemo(() => processData(liquidity), [liquidity, selectedConcepts, variationType])
-    const indebtednessProcessed = useMemo(() => processData(indebtedness), [indebtedness, selectedConcepts, variationType])
-    const managementProcessed = useMemo(() => processData(management), [management, selectedConcepts, variationType])
-    const assessmentProcessed = useMemo(() => processData(assessment), [assessment, selectedConcepts, variationType])
+    // ... other memos updated with periodType ...
+    const profitabilityProcessed = useMemo(() => processData(profitability), [profitability, selectedConcepts, variationType, periodType])
+    const liquidityProcessed = useMemo(() => processData(liquidity), [liquidity, selectedConcepts, variationType, periodType])
+    const indebtednessProcessed = useMemo(() => processData(indebtedness), [indebtedness, selectedConcepts, variationType, periodType])
+    const managementProcessed = useMemo(() => processData(management), [management, selectedConcepts, variationType, periodType])
+    const assessmentProcessed = useMemo(() => processData(assessment), [assessment, selectedConcepts, variationType, periodType])
 
     // Render Controls helper
     const renderControls = () => (
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-end mb-4 gap-4">
+            {/* TTM/Quarterly Filter - Only for Income and Cash Flow */}
+            {(activeTab === 'income' || activeTab === 'cash') && (
+                <div className="flex items-center space-x-2 bg-muted/50 p-1 rounded-lg">
+                    <button
+                        onClick={() => setPeriodType("quarterly")}
+                        className={cn(
+                            "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                            periodType === "quarterly" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        )}
+                    >
+                        Quarterly
+                    </button>
+                    <button
+                        onClick={() => setPeriodType("ttm")}
+                        className={cn(
+                            "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                            periodType === "ttm" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        )}
+                    >
+                        TTM
+                    </button>
+                </div>
+            )}
+
             <div className="flex items-center space-x-2 bg-muted/50 p-1 rounded-lg">
                 <button
                     onClick={() => setVariationType("qoq")}
@@ -268,7 +322,10 @@ export function FinancialsDashboard({
                 <h1 className="text-3xl font-light tracking-tight">{symbol} <span className="text-muted-foreground text-xl">Financials</span></h1>
             </div>
 
-            <Tabs defaultValue="income" className="w-full" onValueChange={() => setSelectedConcepts([])}>
+            <Tabs defaultValue="income" className="w-full" onValueChange={(val) => {
+                setSelectedConcepts([])
+                setActiveTab(val)
+            }}>
                 <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 bg-muted/20 p-1 group/list h-auto">
                     <TabsTrigger value="income" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Income</TabsTrigger>
                     <TabsTrigger value="balance" className="transition-all duration-300 data-[state=active]:bg-background data-[state=active]:shadow-sm group-hover/list:opacity-50 hover:!opacity-100 cursor-pointer">Balance</TabsTrigger>
